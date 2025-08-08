@@ -192,7 +192,75 @@ function App() {
                       </RouteErrorBoundary>
                     }
                   />
-
+                    <Route
+                    path="/qrmfg/test"
+                    element={
+                      <div style={{ padding: 20 }}>
+                        <h1>Test Route Works!</h1>
+                        <p>If you see this, React routing is working.</p>
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="/qrmfg/auditlogs"
+                    element={
+                      <RouteErrorBoundary routeName="Audit Logs">
+                        <ProtectedRoute>
+                          <Auditlogs />
+                        </ProtectedRoute>
+                      </RouteErrorBoundary>
+                    }
+                  />
+                    <Route
+                    path="/qrmfg/workflow-monitoring"
+                    element={
+                      <RouteErrorBoundary routeName="Workflow Monitoring">
+                        <ProtectedRoute>
+                          <WorkflowMonitoring />
+                        </ProtectedRoute>
+                      </RouteErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/qrmfg/users"
+                    element={
+                      <RouteErrorBoundary routeName="Users">
+                        <ProtectedRoute>
+                          <Users />
+                        </ProtectedRoute>
+                      </RouteErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/qrmfg/roles"
+                    element={
+                      <RouteErrorBoundary routeName="Roles">
+                        <ProtectedRoute>
+                          <Roles />
+                        </ProtectedRoute>
+                      </RouteErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/qrmfg/sessions"
+                    element={
+                      <RouteErrorBoundary routeName="Sessions">
+                        <ProtectedRoute>
+                          <Sessions />
+                        </ProtectedRoute>
+                      </RouteErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/qrmfg/user-role-management"
+                    element={
+                      <RouteErrorBoundary routeName="User Role Management">
+                        <ProtectedRoute>
+                          <UserRoleManagement />
+                        </ProtectedRoute>
+                      </RouteErrorBoundary>
+                    }
+                  />
                   <Route
                     path="/qrmfg/jvc"
                     element={
@@ -255,76 +323,17 @@ function App() {
                     }
                   />
                   <Route
-                    path="/qrmfg/test"
-                    element={
-                      <div style={{ padding: 20 }}>
-                        <h1>Test Route Works!</h1>
-                        <p>If you see this, React routing is working.</p>
-                      </div>
-                    }
-                  />
-                  <Route
-                    path="/qrmfg/auditlogs"
-                    element={
-                      <RouteErrorBoundary routeName="Audit Logs">
-                        <ProtectedRoute>
-                          <Auditlogs />
-                        </ProtectedRoute>
-                      </RouteErrorBoundary>
-                    }
-                  />
-                  <Route
-                    path="/qrmfg/users"
-                    element={
-                      <RouteErrorBoundary routeName="Users">
-                        <ProtectedRoute>
-                          <Users />
-                        </ProtectedRoute>
-                      </RouteErrorBoundary>
-                    }
-                  />
-                  <Route
-                    path="/qrmfg/roles"
-                    element={
-                      <RouteErrorBoundary routeName="Roles">
-                        <ProtectedRoute>
-                          <Roles />
-                        </ProtectedRoute>
-                      </RouteErrorBoundary>
-                    }
-                  />
-                  <Route
-                    path="/qrmfg/sessions"
-                    element={
-                      <RouteErrorBoundary routeName="Sessions">
-                        <ProtectedRoute>
-                          <Sessions />
-                        </ProtectedRoute>
-                      </RouteErrorBoundary>
-                    }
-                  />
-                  <Route
-                    path="/qrmfg/user-role-management"
-                    element={
-                      <RouteErrorBoundary routeName="User Role Management">
-                        <ProtectedRoute>
-                          <UserRoleManagement />
-                        </ProtectedRoute>
-                      </RouteErrorBoundary>
-                    }
-                  />
-                  <Route
-                    path="/qrmfg/workflow-monitoring"
-                    element={
-                      <RouteErrorBoundary routeName="Workflow Monitoring">
-                        <ProtectedRoute>
-                          <WorkflowMonitoring />
-                        </ProtectedRoute>
-                      </RouteErrorBoundary>
-                    }
-                  />
-                  <Route
                     path="/qrmfg"
+                    element={
+                      <RouteErrorBoundary routeName="Home">
+                        <ProtectedRoute>
+                          <Home />
+                        </ProtectedRoute>
+                      </RouteErrorBoundary>
+                    }
+                  />
+                    <Route
+                    path="/qrmfg/"
                     element={
                       <RouteErrorBoundary routeName="Home">
                         <ProtectedRoute>
