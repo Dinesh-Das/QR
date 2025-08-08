@@ -1,0 +1,38 @@
+-- V18__create_readable_tables.sql
+-- Create tables with readable names using Hibernate DDL auto-generation
+-- This migration ensures sequences exist for the new readable table names
+
+-- Create sequences for readable table names
+CREATE SEQUENCE QRMFG_WORKFLOWS_SEQ START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE QRMFG_DOCUMENTS_SEQ START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE QRMFG_ANSWERS_SEQ START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE QRMFG_QUESTIONS_SEQ START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE QRMFG_QUESTION_TEMPLATES_SEQ START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE QRMFG_QUERIES_SEQ START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE QRMFG_USERS_SEQ START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE QRMFG_ROLES_SEQ START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE QRMFG_SESSIONS_SEQ START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE QRMFG_AUDIT_SEQ START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE QRMFG_NOTIFICATIONS_SEQ START WITH 1 INCREMENT BY 1;
+
+CREATE SEQUENCE QRMFG_REVISIONS_SEQ START WITH 1 INCREMENT BY 1;
+
+-- Add comments for documentation
+COMMENT ON SEQUENCE QRMFG_WORKFLOWS_SEQ IS 'Sequence for QRMFG_WORKFLOWS table (readable name for material workflows)';
+COMMENT ON SEQUENCE QRMFG_DOCUMENTS_SEQ IS 'Sequence for QRMFG_DOCUMENTS table (readable name for workflow documents)';
+COMMENT ON SEQUENCE QRMFG_ANSWERS_SEQ IS 'Sequence for QRMFG_ANSWERS table (readable name for questionnaire responses)';
+COMMENT ON SEQUENCE QRMFG_QUESTIONS_SEQ IS 'Sequence for QRMFG_QUESTIONS table (readable name for questionnaire master)';
+COMMENT ON SEQUENCE QRMFG_QUESTION_TEMPLATES_SEQ IS 'Sequence for QRMFG_QUESTION_TEMPLATES table';
+COMMENT ON SEQUENCE QRMFG_QUERIES_SEQ IS 'Sequence for QRMFG_QUERIES table';
+COMMENT ON SEQUENCE QRMFG_USERS_SEQ IS 'Sequence for QRMFG_USERS table';
+COMMENT ON SEQUENCE QRMFG_ROLES_SEQ IS 'Sequence for QRMFG_ROLES table';
+COMMENT ON SEQUENCE QRMFG_SESSIONS_SEQ IS 'Sequence for QRMFG_SESSIONS table (readable name for user sessions)';
+COMMENT ON SEQUENCE QRMFG_AUDIT_SEQ IS 'Sequence for QRMFG_AUDIT table (readable name for audit logs)';
+COMMENT ON SEQUENCE QRMFG_NOTIFICATIONS_SEQ IS 'Sequence for QRMFG_NOTIFICATIONS table (readable name for notification preferences)';
+
+COMMENT ON SEQUENCE QRMFG_REVISIONS_SEQ IS 'Sequence for QRMFG_REVISIONS table (readable name for revision info)';
+
+-- Note: Tables will be created automatically by Hibernate with spring.jpa.hibernate.ddl-auto=update
+-- This migration only ensures sequences exist with proper naming
+
+COMMIT;

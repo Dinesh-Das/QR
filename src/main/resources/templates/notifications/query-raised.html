@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>New Query Raised</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #dc3545; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background-color: #f8f9fa; }
+        .footer { padding: 10px; text-align: center; font-size: 12px; color: #666; }
+        .highlight { background-color: #f8d7da; padding: 10px; border-left: 4px solid #dc3545; margin: 10px 0; }
+        .query-box { background-color: white; padding: 15px; border: 1px solid #dee2e6; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>New Query Requires Your Attention</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hello,</p>
+            
+            <p>A new query has been raised and assigned to your team for resolution.</p>
+            
+            <div class="highlight">
+                <h3>Material Information:</h3>
+                <ul>
+                    <li><strong>Material Code:</strong> <span th:text="${query.workflow.materialCode}">CHEM-001</span></li>
+                    <li><strong>Material Name:</strong> <span th:text="${query.workflow.materialName}">Chemical Name</span></li>
+                    <li><strong>Plant:</strong> <span th:text="${query.workflow.assignedPlant}">Plant A</span></li>
+                </ul>
+            </div>
+            
+            <div class="query-box">
+                <h3>Query Details:</h3>
+                <p><strong>Raised By:</strong> <span th:text="${query.raisedBy}">user@company.com</span></p>
+                <p><strong>Assigned Team:</strong> <span th:text="${query.assignedTeam.displayName}">CQS Team</span></p>
+                <p><strong>Priority:</strong> <span th:text="${query.priorityLevel}">NORMAL</span></p>
+                <p><strong>Field Context:</strong> <span th:text="${query.fieldName}">Material Properties</span></p>
+                <p><strong>Question:</strong></p>
+                <div style="background-color: #e9ecef; padding: 10px; border-radius: 3px;">
+                    <span th:text="${query.question}">What is the flash point of this material?</span>
+                </div>
+            </div>
+            
+            <p>Please log into the QRMFG system to provide a response to this query.</p>
+            
+            <p><strong>Note:</strong> Queries should be resolved within 3 business days to avoid workflow delays.</p>
+            
+            <p>Best regards,<br>
+            QRMFG Workflow System</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated notification from the QRMFG Workflow System.</p>
+        </div>
+    </div>
+</body>
+</html>

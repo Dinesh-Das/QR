@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Workflow Overdue</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background-color: #f8d7da; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .content { margin-bottom: 20px; }
+        .material-info { background-color: #e9ecef; padding: 10px; border-radius: 3px; margin: 10px 0; }
+        .urgent { background-color: #f8d7da; padding: 10px; border-radius: 3px; border-left: 4px solid #dc3545; }
+        .footer { font-size: 12px; color: #6c757d; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>🚨 URGENT: Workflow Overdue</h2>
+    </div>
+    
+    <div class="content">
+        <p>Hello,</p>
+        
+        <p><strong>URGENT:</strong> The following MSDS workflow is overdue and requires immediate attention.</p>
+        
+        <div class="material-info">
+            <h4>Material Information:</h4>
+            <ul>
+                <li><strong>Material Code:</strong> <span th:text="${workflow.materialCode}">MAT-001</span></li>
+                <li><strong>Material Name:</strong> <span th:text="${workflow.materialName ?: 'N/A'}">Sample Material</span></li>
+                <li><strong>Assigned Plant:</strong> <span th:text="${workflow.assignedPlant}">Plant A</span></li>
+                <li><strong>Current State:</strong> <span th:text="${workflow.state.displayName}">Plant Pending</span></li>
+                <li><strong>Days Pending:</strong> <span th:text="${workflow.daysPending}">7</span> days</li>
+                <li><strong>Created Date:</strong> <span th:text="${#temporals.format(workflow.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-08 09:00</span></li>
+            </ul>
+        </div>
+        
+        <div class="urgent">
+            <h4>Immediate Action Required:</h4>
+            <div th:if="${workflow.state.name() == 'JVC_PENDING'}">
+                <p><strong>JVC Team:</strong> Please extend this workflow to the assigned plant or take appropriate action.</p>
+            </div>
+            <div th:if="${workflow.state.name() == 'PLANT_PENDING'}">
+                <p><strong>Plant Team:</strong> Please complete the MSDS questionnaire or raise queries for clarification.</p>
+            </div>
+            <div th:if="${workflow.state.name() == 'CQS_PENDING'}">
+                <p><strong>CQS Team:</strong> Please resolve the pending queries to unblock the workflow.</p>
+            </div>
+            <div th:if="${workflow.state.name() == 'TECH_PENDING'}">
+                <p><strong>Technology Team:</strong> Please resolve the pending queries to unblock the workflow.</p>
+            </div>
+            
+            <p>This workflow has exceeded the standard processing time and may impact compliance deadlines.</p>
+        </div>
+        
+        <p>Please log into the QRMFG portal immediately to address this overdue workflow.</p>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
+        <p>Please do not reply to this email.</p>
+    </div>
+</body>
+</html>

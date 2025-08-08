@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Workflow State Changed</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .content { margin-bottom: 20px; }
+        .material-info { background-color: #e9ecef; padding: 10px; border-radius: 3px; margin: 10px 0; }
+        .state-change { background-color: #cce5ff; padding: 10px; border-radius: 3px; border-left: 4px solid #007bff; }
+        .footer { font-size: 12px; color: #6c757d; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Workflow State Changed</h2>
+    </div>
+    
+    <div class="content">
+        <p>Hello,</p>
+        
+        <p>The state of an MSDS workflow has been updated and may require your attention.</p>
+        
+        <div class="material-info">
+            <h4>Material Information:</h4>
+            <ul>
+                <li><strong>Material Code:</strong> <span th:text="${workflow.materialCode}">MAT-001</span></li>
+                <li><strong>Material Name:</strong> <span th:text="${workflow.materialName ?: 'N/A'}">Sample Material</span></li>
+                <li><strong>Assigned Plant:</strong> <span th:text="${workflow.assignedPlant}">Plant A</span></li>
+                <li><strong>Changed By:</strong> <span th:text="${changedBy}">user.name</span></li>
+                <li><strong>Change Date:</strong> <span th:text="${#temporals.format(workflow.lastModified, 'yyyy-MM-dd HH:mm')}">2024-01-15 14:30</span></li>
+            </ul>
+        </div>
+        
+        <div class="state-change">
+            <h4>State Transition:</h4>
+            <p>
+                <strong>Previous State:</strong> <span th:text="${previousState.displayName}">JVC Pending</span><br>
+                <strong>Current State:</strong> <span th:text="${currentState.displayName}">Plant Pending</span>
+            </p>
+            
+            <div th:if="${currentState.name() == 'PLANT_PENDING'}">
+                <p><strong>Action Required:</strong> Plant team needs to complete the questionnaire.</p>
+            </div>
+            <div th:if="${currentState.name() == 'CQS_PENDING'}">
+                <p><strong>Action Required:</strong> CQS team needs to resolve pending queries.</p>
+            </div>
+            <div th:if="${currentState.name() == 'TECH_PENDING'}">
+                <p><strong>Action Required:</strong> Technology team needs to resolve pending queries.</p>
+            </div>
+            <div th:if="${currentState.name() == 'COMPLETED'}">
+                <p><strong>Status:</strong> Workflow has been completed successfully.</p>
+            </div>
+        </div>
+        
+        <p>Please log into the QRMFG portal to view the workflow details and take any required actions.</p>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
+        <p>Please do not reply to this email.</p>
+    </div>
+</body>
+</html>

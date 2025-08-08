@@ -1,0 +1,88 @@
+SR.NO,Category,Question,COMMENTS,Responsible
+1,General,Is 16 Section MSDS of the raw material available?,Not applicable,NONE
+2,General,Which information in any one of the 16 sections is not available in full?,Not applicable,NONE
+3,General,Has the identified missing / more information required from the supplier asked thru Sourcing?,Not applicable,NONE
+4,General,Is CAS number of the raw material based on the pure substance available?,Not applicable,NONE
+5,General,"For mixtures, are ingredients of mixture available?",Not applicable,NONE
+6,General,Is % age composition substances in the mixture available?,Not applicable,NONE
+7,General,Is the total %age of all substances in the mixture equal to 100? If not what is the % of substances not available?,Not applicable,NONE
+8,Physical,Is the material corrosive?,CQS,CQS
+9,Physical,Does the plant have acid and alkali proof storage facilities to store a corrosive raw material?,Plant to fill data,Plant
+10,Physical,Is the material highly toxic?,CQS,CQS
+11,Physical,Does the plant have facilities to handle fine powder of highly toxic raw material?,Plant to fill data,Plant
+12,Physical,Does the plant have facilities to crush the stone like solid raw material?,Plant to fill data,Plant
+13,Physical,Does the plant have facilities to heat/melt the raw material if required for charging the same in a batch?,Plant to fill data,Plant
+14,Physical,Does the plant have facilities to prepare paste of raw material if required for charging the same in a batch?,Plant to fill data,Plant
+15,Flammability and Explosivity,Is Flash point of the raw material given and less than or equal to 65 degree C?,CQS,CQS
+16,Flammability and Explosivity,Is the raw material is to be catgorised as ClassC / Class B / Class A substance as per Petroleum Act / Rules?,CQS,CQS
+17,Flammability and Explosivity,Does all the plants have the capacity and license to store the raw material?,Plant to fill data,Plant
+18,Flammability and Explosivity,"If no, has the plant applied for CCoE license and by when expected to receive the license?",Plant to fill data,Plant
+19,Flammability and Explosivity,Is Flash point of the raw material given is less than 21 degree C?,CQS,CQS
+20,Flammability and Explosivity,"If yes, does plant have infrastructure to comply State Factories Rule for handling 'Flammable liquids'?",Plant to fill data,Plant
+21,Flammability and Explosivity,Does the plant require to have additonal storage capacities to store the raw material?,Plant to fill data,Plant
+22,Flammability and Explosivity,Is the raw material explosive as per MSDS? ,CQS,CQS
+23,Flammability and Explosivity,"If yes, does the plant has facilities to store such raw material?",Plant to fill data,Plant
+24,Flammability and Explosivity,Is Autoignition temperature of the material is less than or equal to that of MTO?,CQS,CQS
+25,Flammability and Explosivity,Does the plant have facilities to handle the raw material ?,Plant to fill data,Plant
+26,Flammability and Explosivity,Does the material has Dust explosion hazard?,CQS,CQS
+27,Flammability and Explosivity,"If yes, does plant has infrastructure to handle material having dust explosion hazard?",Plant to fill data,Plant
+28,Flammability and Explosivity,Does the raw material likely to generate electrostatic charge at the time of transfer or charging?,,CQS
+29,Flammability and Explosivity,"If yes, does plant has infrastructure to handle material having electrostatic hazard?",Plant to fill data,Plant
+30,Toxicity,Is LD 50 (oral) value available and higher than the threshold limit of 200 mg/Kg BW?,,CQS
+31,Toxicity,Is LD 50 (Dermal) value available and higher than 1000 mg/Kg BW?,,CQS
+32,Toxicity,Is LC50 Inhalation value available and higher than 10 mg/L?,,CQS
+33,Toxicity,"If no, in any of the above three cases (where avaialble) then does the plant have facilities and /or procedure to minmise the exposure of workman?",Plant to fill data,Plant
+34,Toxicity,Is the RM a suspect Carcinogenic?,,CQS
+35,Toxicity,"If yes, plant has adequate facilities and /or procedure to minimse the exposure of workman?",Plant to fill data,Plant
+36,Toxicity,Is the RM a suspect Mutagenic?,CQS,CQS
+37,Toxicity,"If yes, plant has adequate facilities and /or procedure to minimse the exposure of workman?",Plant to fill data,Plant
+38,Toxicity,Is the RM a suspect endocrine disruptor?,CQS,CQS
+39,Toxicity,"If yes, plant has adequate facilities and /or procedure to minimse the exposure of workman?",Plant to fill data,Plant
+40,Toxicity,Is the RM a reproductive toxicant?,CQS,CQS
+41,Toxicity,"If yes, plant has adequate facilities and /or procedure to minimse the exposure of workman? ",Plant to fill data,Plant
+42,Toxicity,Is the RM contains Silica > 1%,CQS,CQS
+43,Toxicity,"Is SWARF analysis required? If yes, analysis done and report available for silica content?",CQS,CQS
+44,Toxicity,In the RM a highly toxic to the environment?,CQS,CQS
+45,Toxicity,"If yes, plant has adequate facilities and /or procedure to minimse impact on environment?",Plant to fill data,Plant
+46,Toxicity,Is the TLV / STEL values available and found to be higher than the average value observed during the work place monitoring studies at the shopfloor?,Plant to fill data,Plant
+47,Toxicity,Is the RM falls under HHRM category?,CQS,CQS
+48,Toxicity,Does the plant has infrastructure to handle HHRM?,Plant to fill data,Plant
+49,Process Safety Management,PSM Tier I Outdoor - Thershold quanitity (kgs),CQS,CQS
+50,Process Safety Management,PSM Tier I Indoor - Thershold quanitity (kgs),CQS,CQS
+51,Process Safety Management,PSM Tier II Outdoor - Thershold quanitity (kgs),CQS,CQS
+52,Process Safety Management,PSM Tier II Indoor - Thershold quanitity (kgs),CQS,CQS
+53,Reactivity Hazards,What is the compatible class and its incomatibility with other chemicals?,CQS,CQS
+54,Reactivity Hazards,Is compatibility class available in SAP?,CQS,CQS
+55,Reactivity Hazards,Does the plant have facilities to store & handle incompatible raw material in an isolated manner and away from other incomptible material,Plant to fill data,Plant
+56,Storage and Handling,Are any storage conditions required and available in the plant stores?,Plant to fill data,Plant
+57,Storage and Handling,Are any storage conditions required and available in the shop floor?,Plant to fill data,Plant
+58,Storage and Handling,Does it require closed loop handling system during charging?,Plant to fill data,Plant
+59,Storage and Handling,Does the plant have required Work permit and /or WI/SOP to handle the raw material adequately?,Plant to fill data,Plant
+60,Storage and Handling,"If, yes specify the procedures ",Plant to fill data,Plant
+61,PPE,Recommended specific PPEs based on MSDS,CQS,CQS
+62,PPE,Are recommended PPE as per MSDS to handle the RM is already in use at the plants?,Plant to fill data,Plant
+63,PPE,"If no, by when the plant can procure the require PPE?",Plant to fill data,Plant
+64,Spill Control Measures,Does the MSDS provide the specific spill control measures to be taken?,CQS,CQS
+65,Spill Control Measures,Are the recommended spill control measures available in the plant?,Plant to fill data,Plant
+66,First Aid,Is the raw material poisonous as per the MSDS?,CQS,CQS
+67,First Aid,Is the name of antidote required to counter the impact of the material given in the MSDS?,CQS,CQS
+68,First Aid,Is the above specified antidote available in the plants?,Plant to fill data,Plant
+69,First Aid,If the specified antidote is not available then what is source and who will obtain the antidote in the plant? ,Plant to fill data,Plant
+70,First Aid,Does the plant has capability to provide the first aid mentioned in the MSDS with the existing control measures?,Plant to fill data,Plant
+71,Statutory,Is the RM or any of its ingredient listed in Table 3 of Rule 137 (CMVR),CQS,CQS
+72,Statutory,Is the RM or any of its ingredient listed in part II of Schedule I of MSIHC Rule,CQS,CQS
+73,Statutory,Is the RM or any of its ingredients listed in Schedule II of Factories Act,CQS,CQS
+74,Statutory,"With the current infrastructure, is the concentration of RM / ingredients   listed in Schedule II of Factories Act  within permissible concentrations as per  Factories Act in the work area.",Plant to fill data,Plant
+75,Statutory,Mention details of work area monitoring results and describe infrastructure used for handling,Plant to fill data,Plant
+76,Statutory,"If actual concentrations  of the  RM / ingredients listed in Schedule II of Factories Act , in the shopfloor are not available, is the RM / ingredient listed in schedule II of Factories Act included in next six monthly work area monitoring. ",Plant to fill data,Plant
+77,Statutory,"If permissible  limits of exposure  of RM / ingredients listed in Schedule II of Factories Act are not complied as  work area monitoring , share details fo CAPEX  planned for implementing closed loop addition system addition? Note : If permissible  limits of exposure  of RM / ingredients listed in Schedule II of Factories Act are not complied in any / subsequent work area monitoring  , CAPEX is to be raised for implementing  closed loop addition system addition?",Plant to fill data,Plant
+78,Statutory,"Is the RM listed under Narcotic Drugs and Psychotropic Substances,  Act,1988?",CQS,CQS
+79,Statutory,Does the plant have valid license to handle / store the raw material?,Plant to fill data,Plant
+80,Others,Inputs required from plants based on the above assessment?,Plant to fill data,Plant
+81,Others,Gaps identified vis-à-vis existing controls / protocols,All Plants,Plant
+82,Others,1,,Plant
+83,Others,2,,Plant
+84,Others,3,,Plant
+85,Others,4,,Plant
+86,Others,5,,Plant
+87,Others,6,,Plant

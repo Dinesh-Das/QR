@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Workflow Completed</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background-color: #d4edda; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .content { margin-bottom: 20px; }
+        .material-info { background-color: #e9ecef; padding: 10px; border-radius: 3px; margin: 10px 0; }
+        .success { background-color: #d1ecf1; padding: 10px; border-radius: 3px; border-left: 4px solid #17a2b8; }
+        .footer { font-size: 12px; color: #6c757d; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>✅ MSDS Workflow Completed</h2>
+    </div>
+    
+    <div class="content">
+        <p>Hello,</p>
+        
+        <p>The MSDS workflow for the following material has been successfully completed.</p>
+        
+        <div class="material-info">
+            <h4>Material Information:</h4>
+            <ul>
+                <li><strong>Material Code:</strong> <span th:text="${workflow.materialCode}">MAT-001</span></li>
+                <li><strong>Material Name:</strong> <span th:text="${workflow.materialName ?: 'N/A'}">Sample Material</span></li>
+                <li><strong>Assigned Plant:</strong> <span th:text="${workflow.assignedPlant}">Plant A</span></li>
+                <li><strong>Completed By:</strong> <span th:text="${completedBy}">jane.smith</span></li>
+                <li><strong>Completion Date:</strong> <span th:text="${#temporals.format(workflow.lastModified, 'yyyy-MM-dd HH:mm')}">2024-01-15 14:30</span></li>
+                <li><strong>Total Duration:</strong> <span th:text="${workflow.daysPending}">5</span> days</li>
+            </ul>
+        </div>
+        
+        <div class="success">
+            <h4>Workflow Summary:</h4>
+            <p>All questionnaire steps have been completed and all queries have been resolved. The MSDS documentation process is now complete for this material.</p>
+        </div>
+        
+        <p>You can view the completed workflow and audit trail in the QRMFG portal.</p>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
+        <p>Please do not reply to this email.</p>
+    </div>
+</body>
+</html>

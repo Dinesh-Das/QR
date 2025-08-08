@@ -1,0 +1,6 @@
+set PUBLIC_URL=/qrmfg
+npm run build
+
+
+./mvnw clean compile spring-boot:run
+./mvnw clean package -DskipTests

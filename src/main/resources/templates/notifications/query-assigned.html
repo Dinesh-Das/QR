@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Query Assigned</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background-color: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .content { margin-bottom: 20px; }
+        .material-info { background-color: #e9ecef; padding: 10px; border-radius: 3px; margin: 10px 0; }
+        .query-info { background-color: #f8d7da; padding: 10px; border-radius: 3px; margin: 10px 0; }
+        .action-required { background-color: #cce5ff; padding: 10px; border-radius: 3px; border-left: 4px solid #007bff; }
+        .footer { font-size: 12px; color: #6c757d; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>🔄 Query Reassigned</h2>
+    </div>
+    
+    <div class="content">
+        <p>Hello,</p>
+        
+        <p>A query has been assigned to your team and requires resolution.</p>
+        
+        <div class="material-info">
+            <h4>Material Information:</h4>
+            <ul>
+                <li><strong>Material Code:</strong> <span th:text="${query.workflow.materialCode}">MAT-001</span></li>
+                <li><strong>Material Name:</strong> <span th:text="${query.workflow.materialName ?: 'N/A'}">Sample Material</span></li>
+                <li><strong>Plant:</strong> <span th:text="${query.workflow.assignedPlant}">Plant A</span></li>
+            </ul>
+        </div>
+        
+        <div class="query-info">
+            <h4>Query Details:</h4>
+            <ul>
+                <li><strong>Query ID:</strong> <span th:text="${query.id}">123</span></li>
+                <li><strong>Step:</strong> <span th:text="${query.stepNumber ?: 'N/A'}">3</span></li>
+                <li><strong>Field:</strong> <span th:text="${query.fieldName ?: 'N/A'}">Chemical Composition</span></li>
+                <li><strong>Question:</strong> <span th:text="${query.question}">What is the exact chemical composition?</span></li>
+                <li><strong>Raised By:</strong> <span th:text="${query.raisedBy}">plant.user</span></li>
+                <li><strong>Assigned Team:</strong> <span th:text="${query.assignedTeam.displayName}">CQS Team</span></li>
+                <li><strong>Days Open:</strong> <span th:text="${query.daysOpen}">2</span> days</li>
+            </ul>
+        </div>
+        
+        <div class="action-required">
+            <h4>Action Required:</h4>
+            <p>Please review the query and provide a detailed response to help the plant team continue with the MSDS questionnaire.</p>
+            <ul>
+                <li>Review the material context and query details</li>
+                <li>Provide a comprehensive response</li>
+                <li>Include any relevant documentation or references</li>
+            </ul>
+        </div>
+        
+        <p>Please log into the QRMFG portal to access your query inbox and respond to this query.</p>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
+        <p>Please do not reply to this email.</p>
+    </div>
+</body>
+</html>
