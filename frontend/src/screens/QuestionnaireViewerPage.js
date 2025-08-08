@@ -52,6 +52,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 
 
 import apiClient from '../api/client';
+import { calculateCorrectFieldCounts } from '../utils/questionnaireUtils';
 
 const { Title, Text, Paragraph } = Typography;
 const { Panel } = Collapse;
@@ -61,7 +62,7 @@ const { TabPane } = Tabs;
 const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
   const { workflowId: paramWorkflowId } = useParams();
   const navigate = useNavigate();
-  
+
   // Use prop workflowId if provided (for modal), otherwise use URL param
   const workflowId = propWorkflowId || paramWorkflowId;
   const [loading, setLoading] = useState(true);
@@ -72,18 +73,26 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
 
   console.log('QuestionnaireViewerPage mounted with workflowId:', workflowId);
 
+  // Calculate completion metrics at component level for use across tabs
+  const plantInputs = questionnaireData?.plantData?.plantInputs || {};
+  const { totalUserEditableFields, completedUserEditableFields, completionPercentage } =
+    questionnaireData ? calculateCorrectFieldCounts(plantInputs, questionnaireData.template?.steps) :
+      { totalUserEditableFields: 0, completedUserEditableFields: 0, completionPercentage: 0 };
+
   // Create overview dashboard
   const renderOverviewDashboard = (questionnaireData) => {
     const { template, plantData, workflow, completionStatus } = questionnaireData;
-    
+
     const totalSteps = template?.steps?.length || 0;
     const completedSteps = template?.steps?.filter(step => {
       const stepFields = step.fields || [];
-      const completedFields = stepFields.filter(field => {
-        const value = plantData?.plantInputs?.[field.name] || field.cqsValue || '';
+      // Only count user-editable fields for step completion
+      const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
+      const completedFields = userEditableFields.filter(field => {
+        const value = plantData?.plantInputs?.[field.name] || '';
         return value && value.trim() !== '';
       });
-      return completedFields.length === stepFields.length;
+      return userEditableFields.length > 0 && completedFields.length === userEditableFields.length;
     }).length || 0;
 
     const overallProgress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
@@ -93,7 +102,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
         {/* Hero Stats */}
         <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ 
+            <Card style={{
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               border: 'none',
               borderRadius: 16,
@@ -110,7 +119,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ 
+            <Card style={{
               background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
               border: 'none',
               borderRadius: 16,
@@ -127,7 +136,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ 
+            <Card style={{
               background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
               border: 'none',
               borderRadius: 16,
@@ -136,14 +145,14 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
             }}>
               <Statistic
                 title={<span style={{ color: 'rgba(255,255,255,0.8)' }}>Total Fields</span>}
-                value={completionStatus?.totalFields || 0}
+                value={totalUserEditableFields}
                 valueStyle={{ color: 'white', fontSize: 36, fontWeight: 700 }}
                 prefix={<FileTextOutlined />}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ 
+            <Card style={{
               background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
               border: 'none',
               borderRadius: 16,
@@ -152,7 +161,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
             }}>
               <Statistic
                 title={<span style={{ color: 'rgba(255,255,255,0.8)' }}>Completed Fields</span>}
-                value={completionStatus?.completedFields || 0}
+                value={completedUserEditableFields}
                 valueStyle={{ color: 'white', fontSize: 36, fontWeight: 700 }}
                 prefix={<StarOutlined />}
               />
@@ -161,7 +170,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
         </Row>
 
         {/* Progress Timeline */}
-        <Card 
+        <Card
           title={
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <Avatar style={{ backgroundColor: '#1890ff' }} icon={<BarChartOutlined />} />
@@ -173,21 +182,23 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
           <Timeline mode="left">
             {template?.steps?.map((step, index) => {
               const stepFields = step.fields || [];
-              const completedFields = stepFields.filter(field => {
-                const value = plantData?.plantInputs?.[field.name] || field.cqsValue || '';
+              // Only count user-editable fields for step progress
+              const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
+              const completedFields = userEditableFields.filter(field => {
+                const value = plantData?.plantInputs?.[field.name] || '';
                 return value && value.trim() !== '';
               });
-              const stepProgress = stepFields.length > 0 ? Math.round((completedFields.length / stepFields.length) * 100) : 0;
+              const stepProgress = userEditableFields.length > 0 ? Math.round((completedFields.length / userEditableFields.length) * 100) : 0;
               const isCompleted = stepProgress === 100;
-              
+
               return (
                 <Timeline.Item
                   key={index}
                   color={isCompleted ? '#52c41a' : stepProgress > 0 ? '#faad14' : '#d9d9d9'}
                   dot={
-                    <Avatar 
+                    <Avatar
                       size={32}
-                      style={{ 
+                      style={{
                         backgroundColor: isCompleted ? '#52c41a' : stepProgress > 0 ? '#faad14' : '#d9d9d9'
                       }}
                     >
@@ -203,14 +214,14 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
                       {step.description}
                     </Text>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      <Progress 
-                        percent={stepProgress} 
-                        size="small" 
+                      <Progress
+                        percent={stepProgress}
+                        size="small"
                         style={{ flex: 1 }}
                         strokeColor={isCompleted ? '#52c41a' : '#1890ff'}
                       />
                       <Text strong style={{ fontSize: 13 }}>
-                        {completedFields.length}/{stepFields.length} fields
+                        {completedFields.length}/{userEditableFields.length} fields
                       </Text>
                     </div>
                   </div>
@@ -276,9 +287,9 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
 
     return (
       <Col xs={24} sm={12} lg={8} key={field.name} style={{ marginBottom: 16 }}>
-        <Card 
+        <Card
           hoverable
-          style={{ 
+          style={{
             height: '100%',
             borderRadius: 16,
             border: isEmpty ? '2px dashed #e8e8e8' : isCqsField ? '2px solid #1890ff' : '2px solid #f0f0f0',
@@ -299,20 +310,20 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
             borderLeft: '30px solid transparent',
             borderTop: isEmpty ? '30px solid #faad14' : '30px solid #52c41a'
           }} />
-          
+
           {/* Field header */}
           <div style={{ marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <Avatar 
+            <Avatar
               size={40}
-              style={{ 
+              style={{
                 backgroundColor: isEmpty ? '#faad14' : isCqsField ? '#1890ff' : '#52c41a',
                 flexShrink: 0
               }}
               icon={getFieldIcon(field.type)}
             />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <Text strong style={{ 
-                fontSize: 15, 
+              <Text strong style={{
+                fontSize: 15,
                 color: '#262626',
                 display: 'block',
                 lineHeight: 1.3,
@@ -322,7 +333,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
                 {field.required && <Text type="danger" style={{ marginLeft: 4 }}>*</Text>}
               </Text>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <Tag 
+                <Tag
                   color={field.type === 'radio' ? 'blue' : field.type === 'select' ? 'purple' : 'green'}
                   style={{ fontSize: 10, padding: '0 6px', borderRadius: 8 }}
                 >
@@ -336,7 +347,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
               </div>
             </div>
           </div>
-          
+
           {/* Field value */}
           <div style={{
             padding: '16px',
@@ -351,9 +362,9 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
           }}>
             {isEmpty ? (
               <div>
-                <ExclamationCircleOutlined style={{ 
-                  color: '#faad14', 
-                  fontSize: 20, 
+                <ExclamationCircleOutlined style={{
+                  color: '#faad14',
+                  fontSize: 20,
                   marginBottom: 8,
                   display: 'block'
                 }} />
@@ -363,9 +374,9 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
               </div>
             ) : (
               <div>
-                <CheckOutlined style={{ 
-                  color: '#52c41a', 
-                  fontSize: 16, 
+                <CheckOutlined style={{
+                  color: '#52c41a',
+                  fontSize: 16,
                   marginBottom: 8,
                   display: 'block'
                 }} />
@@ -375,13 +386,13 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
               </div>
             )}
           </div>
-          
+
           {/* Help text */}
           {field.helpText && (
-            <div style={{ 
-              marginTop: 12, 
-              padding: '8px 12px', 
-              backgroundColor: 'rgba(24, 144, 255, 0.05)', 
+            <div style={{
+              marginTop: 12,
+              padding: '8px 12px',
+              backgroundColor: 'rgba(24, 144, 255, 0.05)',
               borderRadius: 8,
               borderLeft: '3px solid #1890ff'
             }}>
@@ -397,25 +408,25 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
   };
 
   const renderStepDetails = (step, plantInputs, cqsData) => {
-    const completedFields = step.fields.filter(field => {
-      const value = plantInputs[field.name] || field.cqsValue || '';
+    // Only count user-editable fields for step details
+    const userEditableFields = step.fields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
+    const completedFields = userEditableFields.filter(field => {
+      const value = plantInputs[field.name] || '';
       return value && value.trim() !== '';
     }).length;
-    
-    const completionRate = step.fields.length > 0 ? (completedFields / step.fields.length) * 100 : 0;
-    
+
+    const completionRate = userEditableFields.length > 0 ? (completedFields / userEditableFields.length) * 100 : 0;
+
     return (
       <div key={step.stepNumber} style={{ marginBottom: 32 }}>
         {/* Step Header */}
-        <Card 
-          style={{ 
+        <Card
+          style={{
             marginBottom: 24,
             borderRadius: 16,
-            background: `linear-gradient(135deg, ${
-              completionRate === 100 ? '#52c41a' : completionRate > 0 ? '#faad14' : '#8c8c8c'
-            } 0%, ${
-              completionRate === 100 ? '#73d13d' : completionRate > 0 ? '#ffc53d' : '#bfbfbf'
-            } 100%)`,
+            background: `linear-gradient(135deg, ${completionRate === 100 ? '#52c41a' : completionRate > 0 ? '#faad14' : '#8c8c8c'
+              } 0%, ${completionRate === 100 ? '#73d13d' : completionRate > 0 ? '#ffc53d' : '#bfbfbf'
+              } 100%)`,
             border: 'none',
             color: 'white'
           }}
@@ -423,9 +434,9 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <Avatar 
-                size={48} 
-                style={{ 
+              <Avatar
+                size={48}
+                style={{
                   backgroundColor: 'rgba(255,255,255,0.2)',
                   color: 'white',
                   fontSize: 20,
@@ -439,7 +450,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
                   {step.title}
                 </Title>
                 <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>
-                  {completedFields} of {step.fields.length} fields completed • {Math.round(completionRate)}% done
+                  {completedFields} of {userEditableFields.length} fields completed • {Math.round(completionRate)}% done
                 </Text>
               </div>
             </div>
@@ -447,8 +458,8 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
               <div style={{ fontSize: 32, fontWeight: 700, marginBottom: 4 }}>
                 {Math.round(completionRate)}%
               </div>
-              <Progress 
-                percent={completionRate} 
+              <Progress
+                percent={completionRate}
                 showInfo={false}
                 strokeColor="rgba(255,255,255,0.8)"
                 trailColor="rgba(255,255,255,0.2)"
@@ -460,8 +471,8 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
 
         {/* Step Description */}
         {step.description && (
-          <Card 
-            style={{ 
+          <Card
+            style={{
               marginBottom: 24,
               borderRadius: 12,
               borderLeft: '4px solid #1890ff',
@@ -477,9 +488,9 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
             </div>
           </Card>
         )}
-        
+
         {/* Fields Grid */}
-        <Card 
+        <Card
           title={
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <Avatar style={{ backgroundColor: '#722ed1' }} icon={<SafetyOutlined />} />
@@ -495,7 +506,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
               {step.fields.map(field => renderFieldValue(field, plantInputs, cqsData))}
             </Row>
           ) : (
-            <Empty 
+            <Empty
               description="No fields available for this step"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
             />
@@ -519,8 +530,8 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
     return (
       <div style={{ padding: 24 }}>
         <Card>
-          <Button 
-            icon={<ArrowLeftOutlined />} 
+          <Button
+            icon={<ArrowLeftOutlined />}
             onClick={() => onClose ? onClose() : navigate(-1)}
             style={{ marginBottom: 16 }}
           >
@@ -563,8 +574,9 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
   }
 
   const { template, plantData, workflow, completionStatus, cqsData, accessControl } = questionnaireData;
-  const plantInputs = plantData?.plantInputs || {};
   const cqsDataValues = cqsData?.data || {};
+
+
 
   // Debug logging to see the actual data structure
   console.log('Full questionnaire data:', questionnaireData);
@@ -572,14 +584,14 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
   console.log('Plant inputs:', plantInputs);
   console.log('Plant inputs keys:', Object.keys(plantInputs));
   console.log('Template steps:', template?.steps);
-  
+
   // Log first few fields to see what field names we're looking for
   if (template?.steps?.[0]?.fields) {
     console.log('First step fields:', template.steps[0].fields.map(f => ({ name: f.name, label: f.label })));
   }
 
   return (
-    <div style={{ 
+    <div style={{
       background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
       minHeight: '100vh',
       padding: '16px'
@@ -587,8 +599,8 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
       <div style={{ maxWidth: 1400, margin: '0 auto' }}>
         {/* Floating Header */}
         <Affix offsetTop={16}>
-          <Card 
-            style={{ 
+          <Card
+            style={{
               marginBottom: 24,
               borderRadius: 20,
               border: 'none',
@@ -600,10 +612,10 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                <Button 
-                  icon={<ArrowLeftOutlined />} 
+                <Button
+                  icon={<ArrowLeftOutlined />}
                   onClick={() => onClose ? onClose() : navigate(-1)}
-                  style={{ 
+                  style={{
                     backgroundColor: 'rgba(255,255,255,0.15)',
                     border: '2px solid rgba(255,255,255,0.3)',
                     color: 'white',
@@ -625,8 +637,8 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <Tag 
-                  style={{ 
+                <Tag
+                  style={{
                     backgroundColor: 'rgba(255,255,255,0.15)',
                     border: '2px solid rgba(255,255,255,0.3)',
                     color: 'white',
@@ -649,8 +661,8 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
         </Affix>
 
         {/* Main Content with Tabs */}
-        <Card 
-          style={{ 
+        <Card
+          style={{
             borderRadius: 20,
             border: 'none',
             boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
@@ -658,49 +670,49 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
           }}
           bodyStyle={{ padding: 0 }}
         >
-          <Tabs 
+          <Tabs
             activeKey={activeView}
             onChange={setActiveView}
             size="large"
             style={{ margin: 0 }}
-            tabBarStyle={{ 
-              margin: 0, 
+            tabBarStyle={{
+              margin: 0,
               padding: '0 32px',
               backgroundColor: '#fafbfc',
               borderBottom: '2px solid #f0f0f0'
             }}
           >
-            <TabPane 
+            <TabPane
               tab={
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 600 }}>
                   <DashboardOutlined />
                   Overview Dashboard
                 </span>
-              } 
+              }
               key="overview"
             >
               <div style={{ padding: '32px' }}>
                 {renderOverviewDashboard(questionnaireData)}
               </div>
             </TabPane>
-            
-            <TabPane 
+
+            <TabPane
               tab={
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 600 }}>
                   <FileTextOutlined />
                   Detailed Steps
                   <Badge count={template?.steps?.length || 0} style={{ backgroundColor: '#1890ff' }} />
                 </span>
-              } 
+              }
               key="details"
             >
               <div style={{ padding: '32px', backgroundColor: '#fafbfc' }}>
                 {template?.steps?.length > 0 ? (
-                  template.steps.map(step => 
+                  template.steps.map(step =>
                     renderStepDetails(step, plantInputs, cqsDataValues)
                   )
                 ) : (
-                  <Empty 
+                  <Empty
                     description="No questionnaire steps available"
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                     style={{ padding: '60px 0' }}
@@ -708,20 +720,20 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
                 )}
               </div>
             </TabPane>
-            
-            <TabPane 
+
+            <TabPane
               tab={
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 600 }}>
                   <BarChartOutlined />
                   Analytics
                 </span>
-              } 
+              }
               key="analytics"
             >
               <div style={{ padding: '32px' }}>
                 <Row gutter={[24, 24]}>
                   <Col span={24}>
-                    <Card 
+                    <Card
                       title={
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <Avatar style={{ backgroundColor: '#722ed1' }} icon={<CrownOutlined />} />
@@ -734,7 +746,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
                         <Col span={8}>
                           <Statistic
                             title="Completion Rate"
-                            value={Math.round(((completionStatus?.completedFields || 0) / (completionStatus?.totalFields || 1)) * 100)}
+                            value={completionPercentage}
                             suffix="%"
                             valueStyle={{ color: '#3f8600' }}
                             prefix={<ThunderboltOutlined />}
@@ -743,7 +755,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
                         <Col span={8}>
                           <Statistic
                             title="Fields Remaining"
-                            value={(completionStatus?.totalFields || 0) - (completionStatus?.completedFields || 0)}
+                            value={totalUserEditableFields - completedUserEditableFields}
                             valueStyle={{ color: '#cf1322' }}
                             prefix={<ClockCircleOutlined />}
                           />
@@ -751,7 +763,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
                         <Col span={8}>
                           <Statistic
                             title="Auto-populated Fields"
-                            value={template?.steps?.reduce((acc, step) => 
+                            value={template?.steps?.reduce((acc, step) =>
                               acc + (step.fields?.filter(f => f.cqsAutoPopulated)?.length || 0), 0) || 0}
                             valueStyle={{ color: '#1890ff' }}
                             prefix={<RocketOutlined />}

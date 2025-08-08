@@ -310,7 +310,7 @@ const WorkflowMonitoring = () => {
       }
 
       if (params.length > 0) {
-        url += `?${  params.join('&')}`;
+        url += `?${params.join('&')}`;
       }
 
       const response = await apiClient.get(url, { responseType: 'blob' });
@@ -602,10 +602,10 @@ const WorkflowMonitoring = () => {
                   dataSource={
                     dashboardData && dashboardData.workflowsByPlant
                       ? Object.entries(dashboardData.workflowsByPlant).map(([plant, count]) => ({
-                          key: plant,
-                          plant,
-                          count
-                        }))
+                        key: plant,
+                        plant,
+                        count
+                      }))
                       : []
                   }
                   columns={[
@@ -716,14 +716,14 @@ const WorkflowMonitoring = () => {
                       dataSource={
                         slaReport.totalQueriesByTeam
                           ? Object.keys(slaReport.totalQueriesByTeam).map(team => ({
-                              key: team,
-                              team,
-                              total: slaReport.totalQueriesByTeam[team],
-                              resolved: slaReport.resolvedQueriesByTeam[team],
-                              overdue: slaReport.overdueQueriesByTeam[team],
-                              avgTime: slaReport.averageResolutionTimesByTeam[team]?.toFixed(1),
-                              compliance: slaReport.slaComplianceByTeam[team]?.toFixed(1)
-                            }))
+                            key: team,
+                            team,
+                            total: slaReport.totalQueriesByTeam[team],
+                            resolved: slaReport.resolvedQueriesByTeam[team],
+                            overdue: slaReport.overdueQueriesByTeam[team],
+                            avgTime: slaReport.averageResolutionTimesByTeam[team]?.toFixed(1),
+                            compliance: slaReport.slaComplianceByTeam[team]?.toFixed(1)
+                          }))
                           : []
                       }
                       columns={[
@@ -759,7 +759,7 @@ const WorkflowMonitoring = () => {
         <TabPane tab="Bottlenecks Analysis" key="3">
           <Button
             type="primary"
-            onClick={fetchBottlenecks}
+            onClick={() => fetchBottlenecks()}
             loading={bottlenecksLoading}
             style={{ marginBottom: 16 }}
           >
@@ -780,12 +780,12 @@ const WorkflowMonitoring = () => {
                       dataSource={
                         bottlenecks.averageTimeInState
                           ? Object.entries(bottlenecks.averageTimeInState).map(
-                              ([state, hours]) => ({
-                                key: state,
-                                state,
-                                hours: hours.toFixed(1)
-                              })
-                            )
+                            ([state, hours]) => ({
+                              key: state,
+                              state,
+                              hours: hours.toFixed(1)
+                            })
+                          )
                           : []
                       }
                       columns={[
@@ -802,10 +802,10 @@ const WorkflowMonitoring = () => {
                       dataSource={
                         bottlenecks.overdueByState
                           ? Object.entries(bottlenecks.overdueByState).map(([state, count]) => ({
-                              key: state,
-                              state,
-                              count
-                            }))
+                            key: state,
+                            state,
+                            count
+                          }))
                           : []
                       }
                       columns={[
@@ -825,10 +825,10 @@ const WorkflowMonitoring = () => {
                       dataSource={
                         bottlenecks.openQueriesByTeam
                           ? Object.entries(bottlenecks.openQueriesByTeam).map(([team, count]) => ({
-                              key: team,
-                              team,
-                              count
-                            }))
+                            key: team,
+                            team,
+                            count
+                          }))
                           : []
                       }
                       columns={[
@@ -845,10 +845,10 @@ const WorkflowMonitoring = () => {
                       dataSource={
                         bottlenecks.delayedByPlant
                           ? Object.entries(bottlenecks.delayedByPlant).map(([plant, count]) => ({
-                              key: plant,
-                              plant,
-                              count
-                            }))
+                            key: plant,
+                            plant,
+                            count
+                          }))
                           : []
                       }
                       columns={[
@@ -873,7 +873,7 @@ const WorkflowMonitoring = () => {
         <TabPane tab="Performance Metrics" key="4">
           <Button
             type="primary"
-            onClick={fetchPerformanceMetrics}
+            onClick={() => fetchPerformanceMetrics()}
             loading={performanceLoading}
             style={{ marginBottom: 16 }}
           >

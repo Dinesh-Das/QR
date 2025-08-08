@@ -895,6 +895,8 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
   //   return 0;
   // };
 
+  // Fixed: Progress calculation now excludes CQS auto-populated fields
+  // CQS fields are disabled and auto-populated, so they shouldn't count towards user progress
   const getOverallCompletionPercentage = useCallback(() => {
     if (!questionnaireSteps || questionnaireSteps.length === 0 || !form) {
       return 0;
@@ -910,9 +912,12 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
       questionnaireSteps.forEach((step, _index) => {
         const stepFields = step.fields || [];
-        totalFields += stepFields.length;
+        
+        // Filter out CQS auto-populated fields from total count
+        const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
+        totalFields += userEditableFields.length;
 
-        const completedStepFields = stepFields.filter(field => {
+        const completedStepFields = userEditableFields.filter(field => {
           const value = currentData[field.name];
           if (Array.isArray(value)) {
             return value.length > 0;
@@ -925,7 +930,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
       const percentage = totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
 
-      // Overall completion calculated
+      // Overall completion calculated (excluding CQS auto-populated fields)
 
       return percentage;
     } catch (error) {
@@ -949,9 +954,12 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
       questionnaireSteps.forEach(step => {
         const stepFields = step.fields || [];
-        totalFields += stepFields.length;
+        
+        // Filter out CQS auto-populated fields from total count
+        const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
+        totalFields += userEditableFields.length;
 
-        const populatedStepFields = stepFields.filter(field => {
+        const populatedStepFields = userEditableFields.filter(field => {
           const value = currentData[field.name];
           if (Array.isArray(value)) {
             return value.length > 0;
@@ -962,7 +970,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
         populatedFields += populatedStepFields.length;
       });
 
-      // Total fields populated calculated
+      // Total fields populated calculated (excluding CQS auto-populated fields)
 
       return { total: totalFields, populated: populatedFields };
     } catch (error) {
@@ -1242,7 +1250,10 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
       questionnaireSteps.forEach((step, index) => {
         const stepFields = step.fields || [];
-        const requiredFields = stepFields.filter(field => field.required);
+        
+        // Filter out CQS auto-populated fields for step completion calculation
+        const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
+        const requiredFields = userEditableFields.filter(field => field.required);
 
         const completedRequiredFields = requiredFields.filter(field => {
           const value = currentData[field.name];
@@ -1259,8 +1270,8 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
             newCompletedSteps.add(index);
           }
         } else {
-          // If no required fields, mark complete if at least 50% of fields are filled
-          const completedOptionalFields = stepFields.filter(field => {
+          // If no required fields, mark complete if at least 50% of user-editable fields are filled
+          const completedOptionalFields = userEditableFields.filter(field => {
             const value = currentData[field.name];
             if (Array.isArray(value)) {
               return value.length > 0;
@@ -1269,14 +1280,14 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           });
 
           const completionPercentage =
-            stepFields.length > 0 ? (completedOptionalFields.length / stepFields.length) * 100 : 0;
+            userEditableFields.length > 0 ? (completedOptionalFields.length / userEditableFields.length) * 100 : 0;
 
           if (completionPercentage >= 50) {
             newCompletedSteps.add(index);
           }
         }
 
-        // Step completion calculated
+        // Step completion calculated (excluding CQS auto-populated fields)
       });
 
       // Step completion updated
@@ -1505,8 +1516,11 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
     }
 
     const stepFields = questionnaireSteps[stepIndex].fields;
-    const requiredFields = stepFields.filter(field => field.required);
-    const optionalFields = stepFields.filter(field => !field.required);
+    
+    // Filter out CQS auto-populated fields for step completion calculation
+    const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
+    const requiredFields = userEditableFields.filter(field => field.required);
+    const optionalFields = userEditableFields.filter(field => !field.required);
 
     // Get current form values including any unsaved changes
     const currentFormValues = form.getFieldsValue();
@@ -1533,7 +1547,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
     const resolvedQueries = stepQueries.filter(q => q.status === 'RESOLVED');
 
     return {
-      total: stepFields.length,
+      total: userEditableFields.length,
       required: requiredFields.length,
       optional: optionalFields.length,
       completed: completedRequiredFields.length + completedOptionalFields.length,
@@ -1542,18 +1556,18 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
       isComplete:
         requiredFields.length > 0
           ? completedRequiredFields.length === requiredFields.length
-          : stepFields.length > 0 &&
-          (completedRequiredFields.length + completedOptionalFields.length) / stepFields.length >=
+          : userEditableFields.length > 0 &&
+          (completedRequiredFields.length + completedOptionalFields.length) / userEditableFields.length >=
           0.5,
       hasOpenQueries: openQueries.length > 0,
       hasResolvedQueries: resolvedQueries.length > 0,
       openQueriesCount: openQueries.length,
       resolvedQueriesCount: resolvedQueries.length,
       completionPercentage:
-        stepFields.length > 0
+        userEditableFields.length > 0
           ? Math.round(
             ((completedRequiredFields.length + completedOptionalFields.length) /
-              stepFields.length) *
+              userEditableFields.length) *
             100
           )
           : 100,
@@ -2371,7 +2385,10 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
                       questionnaireSteps.forEach((step, index) => {
                         const stepFields = step.fields || [];
-                        const requiredFields = stepFields.filter(field => field.required);
+                        
+                        // Filter out CQS auto-populated fields for step completion calculation
+                        const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
+                        const requiredFields = userEditableFields.filter(field => field.required);
 
                         const completedRequiredFields = requiredFields.filter(field => {
                           const value = allValues[field.name];
@@ -2388,8 +2405,8 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
                             newCompletedSteps.add(index);
                           }
                         } else {
-                          // If no required fields, mark complete if at least 50% of fields are filled
-                          const completedOptionalFields = stepFields.filter(field => {
+                          // If no required fields, mark complete if at least 50% of user-editable fields are filled
+                          const completedOptionalFields = userEditableFields.filter(field => {
                             const value = allValues[field.name];
                             if (Array.isArray(value)) {
                               return value.length > 0;
@@ -2398,8 +2415,8 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
                           });
 
                           const completionPercentage =
-                            stepFields.length > 0
-                              ? (completedOptionalFields.length / stepFields.length) * 100
+                            userEditableFields.length > 0
+                              ? (completedOptionalFields.length / userEditableFields.length) * 100
                               : 0;
 
                           if (completionPercentage >= 50) {

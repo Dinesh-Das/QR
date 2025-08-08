@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { WORKFLOW_SPECIFIC_STATES, WORKFLOW_STATES } from '../constants';
 import { getCurrentUser } from '../services/auth';
 import { workflowAPI } from '../services/workflowAPI';
+import { recalculateWorkflowProgress, getTemplateFieldCounts, calculateCorrectFieldCounts } from '../utils/questionnaireUtils';
 
 /**
  * Custom hook for managing plant workflow data and operations
@@ -76,29 +77,46 @@ export const usePlantWorkflows = (currentPlant, userPlantData) => {
         // Transform the data to match the expected format and filter by current plant
         workflowsWithProgress = dashboardData.workflows
           .filter(workflow => workflow.plantCode === plantCode) // Only show workflows for current plant
-          .map(workflow => ({
-            id: workflow.workflowId,
-            materialCode: workflow.materialCode,
-            plantCode: workflow.plantCode,
-            currentState: workflow.isSubmitted
-              ? WORKFLOW_STATES.COMPLETED
-              : WORKFLOW_SPECIFIC_STATES.PLANT_PENDING,
-            completionStatus: workflow.completionStatus,
-            completionPercentage: workflow.completionPercentage || 0,
-            totalFields: workflow.totalFields || 0,
-            completedFields: workflow.completedFields || 0,
-            requiredFields: workflow.requiredFields || 0,
-            completedRequiredFields: workflow.completedRequiredFields || 0,
-            lastModified: workflow.lastModified,
-            submittedAt: workflow.submittedAt,
-            submittedBy: workflow.submittedBy,
-            isSubmitted: workflow.isSubmitted,
-            isCompleted: workflow.isCompleted,
-            openQueries: 0, // TODO: Add query count from backend
-            assignedPlant: workflow.plantCode,
-            materialName: workflow.materialName,
-            itemDescription: workflow.itemDescription
-          }));
+          .map(workflow => {
+            // Recalculate progress with correct field counts (excluding CQS auto-populated fields)
+            const correctedWorkflow = recalculateWorkflowProgress(workflow, workflow.plantInputs);
+            
+            // Determine the correct completion status based on actual progress
+            let completionStatus;
+            if (workflow.isSubmitted) {
+              completionStatus = 'SUBMITTED';
+            } else if (correctedWorkflow.completionPercentage === 100) {
+              completionStatus = 'COMPLETED';
+            } else if (correctedWorkflow.completionPercentage > 0) {
+              completionStatus = 'IN_PROGRESS';
+            } else {
+              completionStatus = 'DRAFT';
+            }
+
+            return {
+              id: workflow.workflowId,
+              materialCode: workflow.materialCode,
+              plantCode: workflow.plantCode,
+              currentState: workflow.isSubmitted
+                ? WORKFLOW_STATES.COMPLETED
+                : WORKFLOW_SPECIFIC_STATES.PLANT_PENDING,
+              completionStatus,
+              completionPercentage: correctedWorkflow.completionPercentage,
+              totalFields: correctedWorkflow.totalFields,
+              completedFields: correctedWorkflow.completedFields,
+              requiredFields: workflow.requiredFields || 0,
+              completedRequiredFields: workflow.completedRequiredFields || 0,
+              lastModified: workflow.lastModified,
+              submittedAt: workflow.submittedAt,
+              submittedBy: workflow.submittedBy,
+              isSubmitted: workflow.isSubmitted,
+              isCompleted: workflow.isCompleted,
+              openQueries: 0, // TODO: Add query count from backend
+              assignedPlant: workflow.plantCode,
+              materialName: workflow.materialName,
+              itemDescription: workflow.itemDescription
+            };
+          });
       } catch (plantDataError) {
         console.warn(
           'Failed to load plant-specific data, falling back to regular workflows:',
@@ -111,32 +129,53 @@ export const usePlantWorkflows = (currentPlant, userPlantData) => {
           console.log('Fallback: Loaded plant workflows:', plantWorkflows);
 
           // Add mock progress data to plant workflows and filter by current plant
+          const { totalUserEditableFields } = getTemplateFieldCounts();
+          
           workflowsWithProgress = plantWorkflows
             .filter(workflow => {
               const workflowPlant = workflow.plantCode || workflow.assignedPlant;
               return workflowPlant === plantCode; // Only show workflows for current plant
             })
-            .map(workflow => ({
-              id: workflow.id,
-              materialCode: workflow.materialCode,
-              plantCode: workflow.plantCode || workflow.assignedPlant,
-              currentState: workflow.currentState || workflow.state,
-              completionStatus: 'DRAFT', // Default status
-              completionPercentage: 0, // Default progress
-              totalFields: 87, // Default total fields
-              completedFields: 0, // Default completed
-              requiredFields: 50, // Default required
-              completedRequiredFields: 0, // Default completed required
-              lastModified: workflow.lastModified,
-              submittedAt: null,
-              submittedBy: null,
-              isSubmitted: false,
-              isCompleted: false,
-              openQueries: workflow.openQueries || 0,
-              assignedPlant: workflow.plantCode || workflow.assignedPlant,
-              materialName: workflow.materialName,
-              itemDescription: workflow.itemDescription
-            }));
+            .map(workflow => {
+              // Calculate progress if plant inputs are available
+              const plantInputs = workflow.plantInputs || workflow.plantData?.plantInputs || {};
+              const { completionPercentage, completedFields } = calculateCorrectFieldCounts(plantInputs);
+              
+              // Determine the correct completion status based on actual progress
+              let completionStatus;
+              const isSubmitted = workflow.isSubmitted || workflow.submittedAt;
+              if (isSubmitted) {
+                completionStatus = 'SUBMITTED';
+              } else if (completionPercentage === 100) {
+                completionStatus = 'COMPLETED';
+              } else if (completionPercentage > 0) {
+                completionStatus = 'IN_PROGRESS';
+              } else {
+                completionStatus = 'DRAFT';
+              }
+
+              return {
+                id: workflow.id,
+                materialCode: workflow.materialCode,
+                plantCode: workflow.plantCode || workflow.assignedPlant,
+                currentState: workflow.currentState || workflow.state,
+                completionStatus,
+                completionPercentage,
+                totalFields: totalUserEditableFields, // Correct total user-editable fields
+                completedFields,
+                requiredFields: 50, // Default required
+                completedRequiredFields: 0, // Default completed required
+                lastModified: workflow.lastModified,
+                submittedAt: workflow.submittedAt || null,
+                submittedBy: workflow.submittedBy || null,
+                isSubmitted,
+                isCompleted: workflow.isCompleted || false,
+                openQueries: workflow.openQueries || 0,
+                assignedPlant: workflow.plantCode || workflow.assignedPlant,
+                materialName: workflow.materialName,
+                itemDescription: workflow.itemDescription
+              };
+            });
 
           console.log('Fallback: Processed workflows:', workflowsWithProgress);
         } catch (fallbackError) {
