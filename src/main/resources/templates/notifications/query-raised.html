@@ -2,55 +2,209 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Query Raised</title>
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #dc3545; color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; background-color: #f8f9fa; }
-        .footer { padding: 10px; text-align: center; font-size: 12px; color: #666; }
-        .highlight { background-color: #f8d7da; padding: 10px; border-left: 4px solid #dc3545; margin: 10px 0; }
-        .query-box { background-color: white; padding: 15px; border: 1px solid #dee2e6; border-radius: 5px; margin: 10px 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6; 
+            color: #2c3e50; 
+            background-color: #f8fafc;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: white; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+        .header { 
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+            color: white; 
+            padding: 32px 24px; 
+            text-align: center;
+        }
+        .header h1 { 
+            font-size: 24px; 
+            font-weight: 600; 
+            margin-bottom: 8px;
+        }
+        .header p { 
+            opacity: 0.9; 
+            font-size: 16px;
+        }
+        .content { 
+            padding: 32px 24px;
+        }
+        .greeting { 
+            font-size: 16px; 
+            margin-bottom: 24px; 
+            color: #4a5568;
+        }
+        .card { 
+            background: #f7fafc; 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-left: 4px solid #e2e8f0;
+        }
+        .card.material { border-left-color: #4299e1; }
+        .card.query { border-left-color: #ed8936; }
+        .card h3 { 
+            font-size: 18px; 
+            font-weight: 600; 
+            margin-bottom: 16px; 
+            color: #2d3748;
+        }
+        .info-grid { 
+            display: grid; 
+            gap: 12px;
+        }
+        .info-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 8px 0;
+        }
+        .info-label { 
+            font-weight: 500; 
+            color: #4a5568; 
+            min-width: 120px;
+        }
+        .info-value { 
+            color: #2d3748; 
+            font-weight: 500; 
+            text-align: right;
+        }
+        .priority-badge { 
+            background: #ed8936; 
+            color: white; 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-size: 14px; 
+            font-weight: 500;
+        }
+        .question-box { 
+            background: white; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 8px; 
+            padding: 16px; 
+            margin: 12px 0; 
+            color: #4a5568;
+        }
+        .question-text {
+            font-style: italic;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-top: 8px;
+        }
+        .sla-notice {
+            background: #fef5e7;
+            border: 1px solid #f6e05e;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            color: #744210;
+        }
+        .cta { 
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+            color: white; 
+            padding: 16px 24px; 
+            border-radius: 8px; 
+            text-align: center; 
+            margin: 24px 0; 
+            text-decoration: none; 
+            display: block; 
+            font-weight: 500;
+        }
+        .footer { 
+            background: #f7fafc; 
+            padding: 24px; 
+            text-align: center; 
+            border-top: 1px solid #e2e8f0; 
+            font-size: 14px; 
+            color: #718096;
+        }
+        .footer p { margin: 4px 0; }
+        @media (max-width: 600px) {
+            .container { margin: 0; box-shadow: none; }
+            .content { padding: 24px 16px; }
+            .header { padding: 24px 16px; }
+            .info-item { flex-direction: column; align-items: flex-start; }
+            .info-value { text-align: left; margin-top: 4px; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>New Query Requires Your Attention</h1>
+            <h1>New Query Raised</h1>
+            <p>Your expertise is needed to resolve this query</p>
         </div>
         
         <div class="content">
-            <p>Hello,</p>
+            <p class="greeting">Hello,</p>
             
-            <p>A new query has been raised and assigned to your team for resolution.</p>
+            <p>A new query has been raised and assigned to your team for resolution. Your expertise is needed to help the plant team continue with their MSDS questionnaire.</p>
             
-            <div class="highlight">
-                <h3>Material Information:</h3>
-                <ul>
-                    <li><strong>Material Code:</strong> <span th:text="${query.workflow.materialCode}">CHEM-001</span></li>
-                    <li><strong>Material Name:</strong> <span th:text="${query.workflow.materialName}">Chemical Name</span></li>
-                    <li><strong>Plant:</strong> <span th:text="${query.workflow.assignedPlant}">Plant A</span></li>
-                </ul>
-            </div>
-            
-            <div class="query-box">
-                <h3>Query Details:</h3>
-                <p><strong>Raised By:</strong> <span th:text="${query.raisedBy}">user@company.com</span></p>
-                <p><strong>Assigned Team:</strong> <span th:text="${query.assignedTeam.displayName}">CQS Team</span></p>
-                <p><strong>Priority:</strong> <span th:text="${query.priorityLevel}">NORMAL</span></p>
-                <p><strong>Field Context:</strong> <span th:text="${query.fieldName}">Material Properties</span></p>
-                <p><strong>Question:</strong></p>
-                <div style="background-color: #e9ecef; padding: 10px; border-radius: 3px;">
-                    <span th:text="${query.question}">What is the flash point of this material?</span>
+            <div class="card material">
+                <h3>Material Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Material Code</span>
+                        <span class="info-value" th:text="${query.workflow.materialCode}">CHEM-001</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Material Name</span>
+                        <span class="info-value" th:text="${query.workflow.materialName}">Chemical Name</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Plant</span>
+                        <span class="info-value" th:text="${query.workflow.assignedPlant}">Plant A</span>
+                    </div>
                 </div>
             </div>
             
-            <p>Please log into the QRMFG system to provide a response to this query.</p>
+            <div class="card query">
+                <h3>Query Details</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Raised By</span>
+                        <span class="info-value" th:text="${query.raisedBy}">user@company.com</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Assigned Team</span>
+                        <span class="info-value" th:text="${query.assignedTeam.displayName}">CQS Team</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Priority</span>
+                        <span class="info-value">
+                            <span class="priority-badge" th:text="${query.priorityLevel}">NORMAL</span>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Field Context</span>
+                        <span class="info-value" th:text="${query.fieldName}">Material Properties</span>
+                    </div>
+                </div>
+                <div class="question-box">
+                    <strong>Question:</strong>
+                    <div class="question-text" th:text="${query.question}">What is the flash point of this material?</div>
+                </div>
+            </div>
             
-            <p><strong>Note:</strong> Queries should be resolved within 3 business days to avoid workflow delays.</p>
+            <div class="sla-notice">
+                <strong>SLA Notice:</strong> Queries should be resolved within 3 business days to avoid workflow delays and ensure compliance deadlines are met.
+            </div>
             
-            <p>Best regards,<br>
-            QRMFG Workflow System</p>
+            <div class="cta">
+                Respond to Query
+            </div>
+            
+            <p style="color: #4a5568; margin-top: 24px;">
+                Best regards,<br>
+                <strong>QRMFG Workflow System</strong>
+            </p>
         </div>
         
         <div class="footer">

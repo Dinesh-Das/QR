@@ -2,64 +2,227 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workflow State Changed</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        .content { margin-bottom: 20px; }
-        .material-info { background-color: #e9ecef; padding: 10px; border-radius: 3px; margin: 10px 0; }
-        .state-change { background-color: #cce5ff; padding: 10px; border-radius: 3px; border-left: 4px solid #007bff; }
-        .footer { font-size: 12px; color: #6c757d; margin-top: 30px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6; 
+            color: #2c3e50; 
+            background-color: #f8fafc;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: white; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+        .header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            padding: 32px 24px; 
+            text-align: center;
+        }
+        .header h1 { 
+            font-size: 24px; 
+            font-weight: 600; 
+            margin-bottom: 8px;
+        }
+        .header p { 
+            opacity: 0.9; 
+            font-size: 16px;
+        }
+        .content { 
+            padding: 32px 24px;
+        }
+        .greeting { 
+            font-size: 16px; 
+            margin-bottom: 24px; 
+            color: #4a5568;
+        }
+        .card { 
+            background: #f7fafc; 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-left: 4px solid #e2e8f0;
+        }
+        .card.material { border-left-color: #4299e1; }
+        .card.transition { border-left-color: #667eea; background: #f0f4ff; }
+        .card h3 { 
+            font-size: 18px; 
+            font-weight: 600; 
+            margin-bottom: 16px; 
+            color: #2d3748;
+        }
+        .info-grid { 
+            display: grid; 
+            gap: 12px;
+        }
+        .info-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 8px 0;
+        }
+        .info-label { 
+            font-weight: 500; 
+            color: #4a5568; 
+            min-width: 120px;
+        }
+        .info-value { 
+            color: #2d3748; 
+            font-weight: 500; 
+            text-align: right;
+        }
+        .state-transition {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        .state-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 16px 0;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .state-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .state-badge.previous {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        .state-badge.current {
+            background: #667eea;
+            color: white;
+        }
+        .arrow {
+            font-size: 20px;
+            color: #667eea;
+            margin: 0 8px;
+        }
+        .action-required {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+            color: #4a5568;
+            line-height: 1.6;
+        }
+        .cta { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            padding: 16px 24px; 
+            border-radius: 8px; 
+            text-align: center; 
+            margin: 24px 0; 
+            text-decoration: none; 
+            display: block; 
+            font-weight: 500;
+        }
+        .footer { 
+            background: #f7fafc; 
+            padding: 24px; 
+            text-align: center; 
+            border-top: 1px solid #e2e8f0; 
+            font-size: 14px; 
+            color: #718096;
+        }
+        .footer p { margin: 4px 0; }
+        @media (max-width: 600px) {
+            .container { margin: 0; box-shadow: none; }
+            .content { padding: 24px 16px; }
+            .header { padding: 24px 16px; }
+            .info-item { flex-direction: column; align-items: flex-start; }
+            .info-value { text-align: left; margin-top: 4px; }
+            .state-flow { flex-direction: column; }
+            .arrow { transform: rotate(90deg); }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2>Workflow State Changed</h2>
-    </div>
-    
-    <div class="content">
-        <p>Hello,</p>
-        
-        <p>The state of an MSDS workflow has been updated and may require your attention.</p>
-        
-        <div class="material-info">
-            <h4>Material Information:</h4>
-            <ul>
-                <li><strong>Material Code:</strong> <span th:text="${workflow.materialCode}">MAT-001</span></li>
-                <li><strong>Material Name:</strong> <span th:text="${workflow.materialName ?: 'N/A'}">Sample Material</span></li>
-                <li><strong>Assigned Plant:</strong> <span th:text="${workflow.assignedPlant}">Plant A</span></li>
-                <li><strong>Changed By:</strong> <span th:text="${changedBy}">user.name</span></li>
-                <li><strong>Change Date:</strong> <span th:text="${#temporals.format(workflow.lastModified, 'yyyy-MM-dd HH:mm')}">2024-01-15 14:30</span></li>
-            </ul>
+    <div class="container">
+        <div class="header">
+            <h1>Workflow State Changed</h1>
+            <p>The workflow status has been updated</p>
         </div>
         
-        <div class="state-change">
-            <h4>State Transition:</h4>
-            <p>
-                <strong>Previous State:</strong> <span th:text="${previousState.displayName}">JVC Pending</span><br>
-                <strong>Current State:</strong> <span th:text="${currentState.displayName}">Plant Pending</span>
-            </p>
+        <div class="content">
+            <p class="greeting">Hello,</p>
             
-            <div th:if="${currentState.name() == 'PLANT_PENDING'}">
-                <p><strong>Action Required:</strong> Plant team needs to complete the questionnaire.</p>
+            <p>The state of an MSDS workflow has been updated. Please review the changes below and take any required actions.</p>
+            
+            <div class="card material">
+                <h3>Material Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Material Code</span>
+                        <span class="info-value" th:text="${workflow.materialCode}">MAT-001</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Material Name</span>
+                        <span class="info-value" th:text="${workflow.materialName ?: 'N/A'}">Sample Material</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Assigned Plant</span>
+                        <span class="info-value" th:text="${workflow.assignedPlant}">Plant A</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Changed By</span>
+                        <span class="info-value" th:text="${changedBy}">user.name</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Change Date</span>
+                        <span class="info-value" th:text="${#temporals.format(workflow.lastModified, 'MMM dd, yyyy HH:mm')}">Jan 15, 2024 14:30</span>
+                    </div>
+                </div>
             </div>
-            <div th:if="${currentState.name() == 'CQS_PENDING'}">
-                <p><strong>Action Required:</strong> CQS team needs to resolve pending queries.</p>
+            
+            <div class="card transition">
+                <h3>State Transition</h3>
+                <div class="state-transition">
+                    <div class="state-flow">
+                        <span class="state-badge previous" th:text="${previousState.displayName}">JVC Pending</span>
+                        <span class="arrow">→</span>
+                        <span class="state-badge current" th:text="${currentState.displayName}">Plant Pending</span>
+                    </div>
+                    
+                    <div class="action-required">
+                        <div th:if="${currentState.name() == 'PLANT_PENDING'}">
+                            <strong>Action Required:</strong> Plant team needs to complete the questionnaire to continue the workflow process.
+                        </div>
+                        <div th:if="${currentState.name() == 'CQS_PENDING'}">
+                            <strong>Action Required:</strong> CQS team needs to resolve pending queries to unblock the workflow.
+                        </div>
+                        <div th:if="${currentState.name() == 'TECH_PENDING'}">
+                            <strong>Action Required:</strong> Technology team needs to resolve pending queries to continue the process.
+                        </div>
+                        <div th:if="${currentState.name() == 'COMPLETED'}">
+                            <strong>Status:</strong> Workflow has been completed successfully. All documentation is now ready for compliance review.
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div th:if="${currentState.name() == 'TECH_PENDING'}">
-                <p><strong>Action Required:</strong> Technology team needs to resolve pending queries.</p>
-            </div>
-            <div th:if="${currentState.name() == 'COMPLETED'}">
-                <p><strong>Status:</strong> Workflow has been completed successfully.</p>
+            
+            <div class="cta">
+                View Workflow Details
             </div>
         </div>
         
-        <p>Please log into the QRMFG portal to view the workflow details and take any required actions.</p>
-    </div>
-    
-    <div class="footer">
-        <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
-        <p>Please do not reply to this email.</p>
+        <div class="footer">
+            <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
+            <p>Please do not reply to this email.</p>
+        </div>
     </div>
 </body>
 </html>

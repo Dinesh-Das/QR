@@ -2,68 +2,257 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Query Overdue</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { background-color: #f8d7da; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        .content { margin-bottom: 20px; }
-        .material-info { background-color: #e9ecef; padding: 10px; border-radius: 3px; margin: 10px 0; }
-        .query-info { background-color: #fff3cd; padding: 10px; border-radius: 3px; margin: 10px 0; }
-        .urgent { background-color: #f8d7da; padding: 10px; border-radius: 3px; border-left: 4px solid #dc3545; }
-        .footer { font-size: 12px; color: #6c757d; margin-top: 30px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6; 
+            color: #2c3e50; 
+            background-color: #f8fafc;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: white; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+        .header { 
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            color: white; 
+            padding: 32px 24px; 
+            text-align: center;
+        }
+        .header h1 { 
+            font-size: 24px; 
+            font-weight: 600; 
+            margin-bottom: 8px;
+        }
+        .header p { 
+            opacity: 0.9; 
+            font-size: 16px;
+        }
+        .urgent-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .content { 
+            padding: 32px 24px;
+        }
+        .greeting { 
+            font-size: 16px; 
+            margin-bottom: 24px; 
+            color: #4a5568;
+        }
+        .urgent-notice {
+            background: #fed7d7;
+            border: 1px solid #feb2b2;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            color: #742a2a;
+            font-weight: 500;
+        }
+        .card { 
+            background: #f7fafc; 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-left: 4px solid #e2e8f0;
+        }
+        .card.material { border-left-color: #4299e1; }
+        .card.query { border-left-color: #ed8936; }
+        .card.urgent { border-left-color: #e53e3e; background: #fef5e7; }
+        .card h3 { 
+            font-size: 18px; 
+            font-weight: 600; 
+            margin-bottom: 16px; 
+            color: #2d3748;
+        }
+        .info-grid { 
+            display: grid; 
+            gap: 12px;
+        }
+        .info-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 8px 0;
+        }
+        .info-label { 
+            font-weight: 500; 
+            color: #4a5568; 
+            min-width: 120px;
+        }
+        .info-value { 
+            color: #2d3748; 
+            font-weight: 500; 
+            text-align: right;
+        }
+        .overdue-badge { 
+            background: #e53e3e; 
+            color: white; 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-size: 14px; 
+            font-weight: 500;
+        }
+        .question-box { 
+            background: white; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 8px; 
+            padding: 16px; 
+            margin: 12px 0; 
+            font-style: italic; 
+            color: #4a5568;
+        }
+        .impact-list { 
+            list-style: none; 
+            margin: 16px 0;
+        }
+        .impact-list li { 
+            padding: 8px 0; 
+            padding-left: 24px; 
+            position: relative;
+            color: #742a2a;
+        }
+        .impact-list li:before { 
+            content: "⚠"; 
+            position: absolute; 
+            left: 0; 
+            color: #e53e3e; 
+            font-weight: bold;
+        }
+        .cta { 
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            color: white; 
+            padding: 16px 24px; 
+            border-radius: 8px; 
+            text-align: center; 
+            margin: 24px 0; 
+            text-decoration: none; 
+            display: block; 
+            font-weight: 500;
+            animation: pulse 2s infinite;
+        }
+        .footer { 
+            background: #f7fafc; 
+            padding: 24px; 
+            text-align: center; 
+            border-top: 1px solid #e2e8f0; 
+            font-size: 14px; 
+            color: #718096;
+        }
+        .footer p { margin: 4px 0; }
+        @media (max-width: 600px) {
+            .container { margin: 0; box-shadow: none; }
+            .content { padding: 24px 16px; }
+            .header { padding: 24px 16px; }
+            .info-item { flex-direction: column; align-items: flex-start; }
+            .info-value { text-align: left; margin-top: 4px; }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2>🚨 URGENT: Query Overdue</h2>
-    </div>
-    
-    <div class="content">
-        <p>Hello,</p>
-        
-        <p><strong>URGENT:</strong> The following query is overdue and requires immediate resolution.</p>
-        
-        <div class="material-info">
-            <h4>Material Information:</h4>
-            <ul>
-                <li><strong>Material Code:</strong> <span th:text="${query.workflow.materialCode}">MAT-001</span></li>
-                <li><strong>Material Name:</strong> <span th:text="${query.workflow.materialName ?: 'N/A'}">Sample Material</span></li>
-                <li><strong>Plant:</strong> <span th:text="${query.workflow.assignedPlant}">Plant A</span></li>
-            </ul>
+    <div class="container">
+        <div class="header">
+            <div class="urgent-icon">🚨</div>
+            <h1>URGENT: Query Overdue</h1>
+            <p>Immediate action required to resolve this query</p>
         </div>
         
-        <div class="query-info">
-            <h4>Query Details:</h4>
-            <ul>
-                <li><strong>Query ID:</strong> <span th:text="${query.id}">123</span></li>
-                <li><strong>Step:</strong> <span th:text="${query.stepNumber ?: 'N/A'}">3</span></li>
-                <li><strong>Field:</strong> <span th:text="${query.fieldName ?: 'N/A'}">Chemical Composition</span></li>
-                <li><strong>Question:</strong> <span th:text="${query.question}">What is the exact chemical composition?</span></li>
-                <li><strong>Raised By:</strong> <span th:text="${query.raisedBy}">plant.user</span></li>
-                <li><strong>Assigned Team:</strong> <span th:text="${query.assignedTeam.displayName}">CQS Team</span></li>
-                <li><strong>Days Open:</strong> <span th:text="${query.daysOpen}">5</span> days</li>
-                <li><strong>Created Date:</strong> <span th:text="${#temporals.format(query.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-10 10:30</span></li>
-            </ul>
-        </div>
-        
-        <div class="urgent">
-            <h4>Immediate Action Required:</h4>
-            <p>This query has exceeded the 3-day SLA and is blocking the MSDS workflow. The plant team is waiting for your response to continue with the questionnaire.</p>
+        <div class="content">
+            <p class="greeting">Hello,</p>
             
-            <p><strong>Impact:</strong></p>
-            <ul>
-                <li>Workflow completion is delayed</li>
-                <li>Plant team cannot proceed with MSDS documentation</li>
-                <li>May impact compliance deadlines</li>
-            </ul>
+            <div class="urgent-notice">
+                <strong>URGENT:</strong> The following query has exceeded the 3-day SLA and requires immediate resolution.
+            </div>
+            
+            <div class="card material">
+                <h3>Material Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Material Code</span>
+                        <span class="info-value" th:text="${query.workflow.materialCode}">MAT-001</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Material Name</span>
+                        <span class="info-value" th:text="${query.workflow.materialName ?: 'N/A'}">Sample Material</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Plant</span>
+                        <span class="info-value" th:text="${query.workflow.assignedPlant}">Plant A</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card query">
+                <h3>Query Details</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Query ID</span>
+                        <span class="info-value" th:text="${query.id}">123</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Step</span>
+                        <span class="info-value" th:text="${query.stepNumber ?: 'N/A'}">3</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Field</span>
+                        <span class="info-value" th:text="${query.fieldName ?: 'N/A'}">Chemical Composition</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Raised By</span>
+                        <span class="info-value" th:text="${query.raisedBy}">plant.user</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Assigned Team</span>
+                        <span class="info-value" th:text="${query.assignedTeam.displayName}">CQS Team</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Days Open</span>
+                        <span class="info-value">
+                            <span class="overdue-badge"><span th:text="${query.daysOpen}">5</span> days</span>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Created Date</span>
+                        <span class="info-value" th:text="${#temporals.format(query.createdAt, 'MMM dd, yyyy HH:mm')}">Jan 10, 2024 10:30</span>
+                    </div>
+                </div>
+                <div class="question-box">
+                    <strong>Question:</strong> <span th:text="${query.question}">What is the exact chemical composition?</span>
+                </div>
+            </div>
+            
+            <div class="card urgent">
+                <h3>Immediate Action Required</h3>
+                <p>This query is blocking the MSDS workflow. The plant team is waiting for your response to continue with the questionnaire.</p>
+                
+                <p style="margin: 16px 0; font-weight: 500;">Impact:</p>
+                <ul class="impact-list">
+                    <li>Workflow completion is delayed</li>
+                    <li>Plant team cannot proceed with MSDS documentation</li>
+                    <li>May impact compliance deadlines</li>
+                </ul>
+            </div>
+            
+            <div class="cta">
+                Resolve Query Immediately
+            </div>
         </div>
         
-        <p>Please log into the QRMFG portal immediately to resolve this overdue query.</p>
-    </div>
-    
-    <div class="footer">
-        <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
-        <p>Please do not reply to this email.</p>
+        <div class="footer">
+            <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
+            <p>Please do not reply to this email.</p>
+        </div>
     </div>
 </body>
 </html>

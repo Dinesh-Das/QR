@@ -2,49 +2,191 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workflow Completed</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { background-color: #d4edda; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        .content { margin-bottom: 20px; }
-        .material-info { background-color: #e9ecef; padding: 10px; border-radius: 3px; margin: 10px 0; }
-        .success { background-color: #d1ecf1; padding: 10px; border-radius: 3px; border-left: 4px solid #17a2b8; }
-        .footer { font-size: 12px; color: #6c757d; margin-top: 30px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6; 
+            color: #2c3e50; 
+            background-color: #f8fafc;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: white; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+        .header { 
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white; 
+            padding: 32px 24px; 
+            text-align: center;
+        }
+        .header h1 { 
+            font-size: 24px; 
+            font-weight: 600; 
+            margin-bottom: 8px;
+        }
+        .header p { 
+            opacity: 0.9; 
+            font-size: 16px;
+        }
+        .success-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .content { 
+            padding: 32px 24px;
+        }
+        .greeting { 
+            font-size: 16px; 
+            margin-bottom: 24px; 
+            color: #4a5568;
+        }
+        .card { 
+            background: #f7fafc; 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-left: 4px solid #e2e8f0;
+        }
+        .card.material { border-left-color: #4299e1; }
+        .card.success { border-left-color: #48bb78; background: #f0fff4; }
+        .card h3 { 
+            font-size: 18px; 
+            font-weight: 600; 
+            margin-bottom: 16px; 
+            color: #2d3748;
+        }
+        .info-grid { 
+            display: grid; 
+            gap: 12px;
+        }
+        .info-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 8px 0;
+        }
+        .info-label { 
+            font-weight: 500; 
+            color: #4a5568; 
+            min-width: 120px;
+        }
+        .info-value { 
+            color: #2d3748; 
+            font-weight: 500; 
+            text-align: right;
+        }
+        .duration-badge { 
+            background: #48bb78; 
+            color: white; 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-size: 14px; 
+            font-weight: 500;
+        }
+        .summary-text {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+            color: #4a5568;
+            line-height: 1.6;
+        }
+        .cta { 
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white; 
+            padding: 16px 24px; 
+            border-radius: 8px; 
+            text-align: center; 
+            margin: 24px 0; 
+            text-decoration: none; 
+            display: block; 
+            font-weight: 500;
+        }
+        .footer { 
+            background: #f7fafc; 
+            padding: 24px; 
+            text-align: center; 
+            border-top: 1px solid #e2e8f0; 
+            font-size: 14px; 
+            color: #718096;
+        }
+        .footer p { margin: 4px 0; }
+        @media (max-width: 600px) {
+            .container { margin: 0; box-shadow: none; }
+            .content { padding: 24px 16px; }
+            .header { padding: 24px 16px; }
+            .info-item { flex-direction: column; align-items: flex-start; }
+            .info-value { text-align: left; margin-top: 4px; }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2>✅ MSDS Workflow Completed</h2>
-    </div>
-    
-    <div class="content">
-        <p>Hello,</p>
-        
-        <p>The MSDS workflow for the following material has been successfully completed.</p>
-        
-        <div class="material-info">
-            <h4>Material Information:</h4>
-            <ul>
-                <li><strong>Material Code:</strong> <span th:text="${workflow.materialCode}">MAT-001</span></li>
-                <li><strong>Material Name:</strong> <span th:text="${workflow.materialName ?: 'N/A'}">Sample Material</span></li>
-                <li><strong>Assigned Plant:</strong> <span th:text="${workflow.assignedPlant}">Plant A</span></li>
-                <li><strong>Completed By:</strong> <span th:text="${completedBy}">jane.smith</span></li>
-                <li><strong>Completion Date:</strong> <span th:text="${#temporals.format(workflow.lastModified, 'yyyy-MM-dd HH:mm')}">2024-01-15 14:30</span></li>
-                <li><strong>Total Duration:</strong> <span th:text="${workflow.daysPending}">5</span> days</li>
-            </ul>
+    <div class="container">
+        <div class="header">
+            <div class="success-icon">✅</div>
+            <h1>Workflow Completed</h1>
+            <p>MSDS documentation process successfully finished</p>
         </div>
         
-        <div class="success">
-            <h4>Workflow Summary:</h4>
-            <p>All questionnaire steps have been completed and all queries have been resolved. The MSDS documentation process is now complete for this material.</p>
+        <div class="content">
+            <p class="greeting">Hello,</p>
+            
+            <p>Excellent news! The MSDS workflow for the following material has been successfully completed. All questionnaire steps have been finished and all queries resolved.</p>
+            
+            <div class="card material">
+                <h3>Material Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Material Code</span>
+                        <span class="info-value" th:text="${workflow.materialCode}">MAT-001</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Material Name</span>
+                        <span class="info-value" th:text="${workflow.materialName ?: 'N/A'}">Sample Material</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Assigned Plant</span>
+                        <span class="info-value" th:text="${workflow.assignedPlant}">Plant A</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Completed By</span>
+                        <span class="info-value" th:text="${completedBy}">jane.smith</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Completion Date</span>
+                        <span class="info-value" th:text="${#temporals.format(workflow.lastModified, 'MMM dd, yyyy HH:mm')}">Jan 15, 2024 14:30</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Total Duration</span>
+                        <span class="info-value">
+                            <span class="duration-badge"><span th:text="${workflow.daysPending}">5</span> days</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card success">
+                <h3>Workflow Summary</h3>
+                <div class="summary-text">
+                    All questionnaire steps have been completed and all queries have been resolved. The MSDS documentation process is now complete for this material and ready for compliance review.
+                </div>
+            </div>
+            
+            <div class="cta">
+                View Completed Workflow
+            </div>
         </div>
         
-        <p>You can view the completed workflow and audit trail in the QRMFG portal.</p>
-    </div>
-    
-    <div class="footer">
-        <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
-        <p>Please do not reply to this email.</p>
+        <div class="footer">
+            <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
+            <p>Please do not reply to this email.</p>
+        </div>
     </div>
 </body>
 </html>

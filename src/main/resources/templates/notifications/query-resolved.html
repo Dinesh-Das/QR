@@ -2,59 +2,216 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Query Resolved</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { background-color: #d4edda; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        .content { margin-bottom: 20px; }
-        .material-info { background-color: #e9ecef; padding: 10px; border-radius: 3px; margin: 10px 0; }
-        .query-info { background-color: #fff3cd; padding: 10px; border-radius: 3px; margin: 10px 0; }
-        .response { background-color: #d1ecf1; padding: 10px; border-radius: 3px; border-left: 4px solid #17a2b8; }
-        .footer { font-size: 12px; color: #6c757d; margin-top: 30px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6; 
+            color: #2c3e50; 
+            background-color: #f8fafc;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: white; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+        .header { 
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white; 
+            padding: 32px 24px; 
+            text-align: center;
+        }
+        .header h1 { 
+            font-size: 24px; 
+            font-weight: 600; 
+            margin-bottom: 8px;
+        }
+        .header p { 
+            opacity: 0.9; 
+            font-size: 16px;
+        }
+        .success-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .content { 
+            padding: 32px 24px;
+        }
+        .greeting { 
+            font-size: 16px; 
+            margin-bottom: 24px; 
+            color: #4a5568;
+        }
+        .card { 
+            background: #f7fafc; 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-left: 4px solid #e2e8f0;
+        }
+        .card.material { border-left-color: #4299e1; }
+        .card.query { border-left-color: #ed8936; }
+        .card.response { border-left-color: #48bb78; background: #f0fff4; }
+        .card h3 { 
+            font-size: 18px; 
+            font-weight: 600; 
+            margin-bottom: 16px; 
+            color: #2d3748;
+        }
+        .info-grid { 
+            display: grid; 
+            gap: 12px;
+        }
+        .info-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 8px 0;
+        }
+        .info-label { 
+            font-weight: 500; 
+            color: #4a5568; 
+            min-width: 120px;
+        }
+        .info-value { 
+            color: #2d3748; 
+            font-weight: 500; 
+            text-align: right;
+        }
+        .question-box { 
+            background: white; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 8px; 
+            padding: 16px; 
+            margin: 12px 0; 
+            font-style: italic; 
+            color: #4a5568;
+        }
+        .response-box {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+            color: #2d3748;
+            line-height: 1.6;
+        }
+        .team-badge { 
+            background: #48bb78; 
+            color: white; 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-size: 14px; 
+            font-weight: 500;
+        }
+        .cta { 
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white; 
+            padding: 16px 24px; 
+            border-radius: 8px; 
+            text-align: center; 
+            margin: 24px 0; 
+            text-decoration: none; 
+            display: block; 
+            font-weight: 500;
+        }
+        .footer { 
+            background: #f7fafc; 
+            padding: 24px; 
+            text-align: center; 
+            border-top: 1px solid #e2e8f0; 
+            font-size: 14px; 
+            color: #718096;
+        }
+        .footer p { margin: 4px 0; }
+        @media (max-width: 600px) {
+            .container { margin: 0; box-shadow: none; }
+            .content { padding: 24px 16px; }
+            .header { padding: 24px 16px; }
+            .info-item { flex-direction: column; align-items: flex-start; }
+            .info-value { text-align: left; margin-top: 4px; }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2>✅ Query Resolved</h2>
-    </div>
-    
-    <div class="content">
-        <p>Hello,</p>
-        
-        <p>A query you raised has been resolved by the <span th:text="${query.assignedTeam.displayName}">CQS</span> team.</p>
-        
-        <div class="material-info">
-            <h4>Material Information:</h4>
-            <ul>
-                <li><strong>Material Code:</strong> <span th:text="${query.workflow.materialCode}">MAT-001</span></li>
-                <li><strong>Material Name:</strong> <span th:text="${query.workflow.materialName ?: 'N/A'}">Sample Material</span></li>
-                <li><strong>Plant:</strong> <span th:text="${query.workflow.assignedPlant}">Plant A</span></li>
-            </ul>
+    <div class="container">
+        <div class="header">
+            <div class="success-icon">✅</div>
+            <h1>Query Resolved</h1>
+            <p>Your query has been successfully resolved</p>
         </div>
         
-        <div class="query-info">
-            <h4>Query Details:</h4>
-            <ul>
-                <li><strong>Query ID:</strong> <span th:text="${query.id}">123</span></li>
-                <li><strong>Step:</strong> <span th:text="${query.stepNumber ?: 'N/A'}">3</span></li>
-                <li><strong>Field:</strong> <span th:text="${query.fieldName ?: 'N/A'}">Chemical Composition</span></li>
-                <li><strong>Question:</strong> <span th:text="${query.question}">What is the exact chemical composition?</span></li>
-                <li><strong>Resolved By:</strong> <span th:text="${query.resolvedBy}">expert.user</span></li>
-                <li><strong>Resolution Date:</strong> <span th:text="${#temporals.format(query.resolvedAt, 'yyyy-MM-dd HH:mm')}">2024-01-15 14:30</span></li>
-            </ul>
+        <div class="content">
+            <p class="greeting">Hello,</p>
+            
+            <p>Great news! A query you raised has been resolved by the <span class="team-badge" th:text="${query.assignedTeam.displayName}">CQS</span> team. You can now continue with your questionnaire.</p>
+            
+            <div class="card material">
+                <h3>Material Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Material Code</span>
+                        <span class="info-value" th:text="${query.workflow.materialCode}">MAT-001</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Material Name</span>
+                        <span class="info-value" th:text="${query.workflow.materialName ?: 'N/A'}">Sample Material</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Plant</span>
+                        <span class="info-value" th:text="${query.workflow.assignedPlant}">Plant A</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card query">
+                <h3>Query Details</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Query ID</span>
+                        <span class="info-value" th:text="${query.id}">123</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Step</span>
+                        <span class="info-value" th:text="${query.stepNumber ?: 'N/A'}">3</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Field</span>
+                        <span class="info-value" th:text="${query.fieldName ?: 'N/A'}">Chemical Composition</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Resolved By</span>
+                        <span class="info-value" th:text="${query.resolvedBy}">expert.user</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Resolution Date</span>
+                        <span class="info-value" th:text="${#temporals.format(query.resolvedAt, 'MMM dd, yyyy HH:mm')}">Jan 15, 2024 14:30</span>
+                    </div>
+                </div>
+                <div class="question-box">
+                    <strong>Your Question:</strong> <span th:text="${query.question}">What is the exact chemical composition?</span>
+                </div>
+            </div>
+            
+            <div class="card response">
+                <h3>Expert Response</h3>
+                <div class="response-box" th:text="${query.response}">
+                    The chemical composition is as follows: Component A (45%), Component B (30%), Component C (25%). Please refer to the attached safety data sheet for detailed information.
+                </div>
+            </div>
+            
+            <div class="cta">
+                Continue with Questionnaire
+            </div>
         </div>
         
-        <div class="response">
-            <h4>Response:</h4>
-            <p th:text="${query.response}">The chemical composition is as follows: Component A (45%), Component B (30%), Component C (25%). Please refer to the attached safety data sheet for detailed information.</p>
+        <div class="footer">
+            <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
+            <p>Please do not reply to this email.</p>
         </div>
-        
-        <p>You can now continue with the questionnaire. Please log into the QRMFG portal to view the response and proceed with the workflow.</p>
-    </div>
-    
-    <div class="footer">
-        <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
-        <p>Please do not reply to this email.</p>
     </div>
 </body>
 </html>

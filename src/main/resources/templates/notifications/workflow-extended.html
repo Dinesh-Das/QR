@@ -2,53 +2,193 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workflow Extended to Plant</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        .content { margin-bottom: 20px; }
-        .material-info { background-color: #e9ecef; padding: 10px; border-radius: 3px; margin: 10px 0; }
-        .action-required { background-color: #fff3cd; padding: 10px; border-radius: 3px; border-left: 4px solid #ffc107; }
-        .footer { font-size: 12px; color: #6c757d; margin-top: 30px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6; 
+            color: #2c3e50; 
+            background-color: #f8fafc;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: white; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+        .header { 
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            color: white; 
+            padding: 32px 24px; 
+            text-align: center;
+        }
+        .header h1 { 
+            font-size: 24px; 
+            font-weight: 600; 
+            margin-bottom: 8px;
+        }
+        .header p { 
+            opacity: 0.9; 
+            font-size: 16px;
+        }
+        .content { 
+            padding: 32px 24px;
+        }
+        .greeting { 
+            font-size: 16px; 
+            margin-bottom: 24px; 
+            color: #4a5568;
+        }
+        .card { 
+            background: #f7fafc; 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-left: 4px solid #e2e8f0;
+        }
+        .card.material { border-left-color: #4299e1; }
+        .card.action { border-left-color: #ed8936; background: #fef5e7; }
+        .card h3 { 
+            font-size: 18px; 
+            font-weight: 600; 
+            margin-bottom: 16px; 
+            color: #2d3748;
+        }
+        .info-grid { 
+            display: grid; 
+            gap: 12px;
+        }
+        .info-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 8px 0;
+        }
+        .info-label { 
+            font-weight: 500; 
+            color: #4a5568; 
+            min-width: 120px;
+        }
+        .info-value { 
+            color: #2d3748; 
+            font-weight: 500; 
+            text-align: right;
+        }
+        .status-badge { 
+            background: #4299e1; 
+            color: white; 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-size: 14px; 
+            font-weight: 500;
+        }
+        .action-list { 
+            list-style: none; 
+            margin: 16px 0;
+        }
+        .action-list li { 
+            padding: 8px 0; 
+            padding-left: 24px; 
+            position: relative;
+        }
+        .action-list li:before { 
+            content: "→"; 
+            position: absolute; 
+            left: 0; 
+            color: #ed8936; 
+            font-weight: bold;
+        }
+        .cta { 
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            color: white; 
+            padding: 16px 24px; 
+            border-radius: 8px; 
+            text-align: center; 
+            margin: 24px 0; 
+            text-decoration: none; 
+            display: block; 
+            font-weight: 500;
+        }
+        .footer { 
+            background: #f7fafc; 
+            padding: 24px; 
+            text-align: center; 
+            border-top: 1px solid #e2e8f0; 
+            font-size: 14px; 
+            color: #718096;
+        }
+        .footer p { margin: 4px 0; }
+        @media (max-width: 600px) {
+            .container { margin: 0; box-shadow: none; }
+            .content { padding: 24px 16px; }
+            .header { padding: 24px 16px; }
+            .info-item { flex-direction: column; align-items: flex-start; }
+            .info-value { text-align: left; margin-top: 4px; }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2>MSDS Workflow Extended to Plant</h2>
-    </div>
-    
-    <div class="content">
-        <p>Hello,</p>
-        
-        <p>A new MSDS workflow has been extended to your plant and requires your attention.</p>
-        
-        <div class="material-info">
-            <h4>Material Information:</h4>
-            <ul>
-                <li><strong>Material Code:</strong> <span th:text="${workflow.materialCode}">MAT-001</span></li>
-                <li><strong>Material Name:</strong> <span th:text="${workflow.materialName ?: 'N/A'}">Sample Material</span></li>
-                <li><strong>Assigned Plant:</strong> <span th:text="${workflow.assignedPlant}">Plant A</span></li>
-                <li><strong>Extended By:</strong> <span th:text="${extendedBy}">john.doe</span></li>
-                <li><strong>Current State:</strong> <span th:text="${workflow.state.displayName}">Plant Pending</span></li>
-            </ul>
+    <div class="container">
+        <div class="header">
+            <h1>Workflow Extended</h1>
+            <p>MSDS workflow has been assigned to your plant</p>
         </div>
         
-        <div class="action-required">
-            <h4>Action Required:</h4>
-            <p>Please complete the MSDS questionnaire for this material. You can:</p>
-            <ul>
-                <li>Fill out the multi-step questionnaire</li>
-                <li>Raise queries to CQS or Tech teams if clarification is needed</li>
-                <li>Save your progress and continue later</li>
-            </ul>
+        <div class="content">
+            <p class="greeting">Hello,</p>
+            
+            <p>A new MSDS workflow has been extended to your plant and requires your attention. Please complete the questionnaire to help ensure compliance and safety documentation.</p>
+            
+            <div class="card material">
+                <h3>Material Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Material Code</span>
+                        <span class="info-value" th:text="${workflow.materialCode}">MAT-001</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Material Name</span>
+                        <span class="info-value" th:text="${workflow.materialName ?: 'N/A'}">Sample Material</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Assigned Plant</span>
+                        <span class="info-value" th:text="${workflow.assignedPlant}">Plant A</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Extended By</span>
+                        <span class="info-value" th:text="${extendedBy}">john.doe</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Current State</span>
+                        <span class="info-value">
+                            <span class="status-badge" th:text="${workflow.state.displayName}">Plant Pending</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card action">
+                <h3>Action Required</h3>
+                <p>Please complete the MSDS questionnaire for this material. The system provides flexible options to help you:</p>
+                <ul class="action-list">
+                    <li>Fill out the multi-step questionnaire at your own pace</li>
+                    <li>Raise queries to CQS or Tech teams if clarification is needed</li>
+                    <li>Save your progress and continue later</li>
+                    <li>Access reference materials and documentation</li>
+                </ul>
+            </div>
+            
+            <div class="cta">
+                Access QRMFG Portal
+            </div>
         </div>
         
-        <p>Please log into the QRMFG portal to access the workflow and complete the required steps.</p>
-    </div>
-    
-    <div class="footer">
-        <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
-        <p>Please do not reply to this email.</p>
+        <div class="footer">
+            <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
+            <p>Please do not reply to this email.</p>
+        </div>
     </div>
 </body>
 </html>

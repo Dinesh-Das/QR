@@ -2,62 +2,232 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workflow Overdue</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { background-color: #f8d7da; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        .content { margin-bottom: 20px; }
-        .material-info { background-color: #e9ecef; padding: 10px; border-radius: 3px; margin: 10px 0; }
-        .urgent { background-color: #f8d7da; padding: 10px; border-radius: 3px; border-left: 4px solid #dc3545; }
-        .footer { font-size: 12px; color: #6c757d; margin-top: 30px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6; 
+            color: #2c3e50; 
+            background-color: #f8fafc;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: white; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+        .header { 
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            color: white; 
+            padding: 32px 24px; 
+            text-align: center;
+        }
+        .header h1 { 
+            font-size: 24px; 
+            font-weight: 600; 
+            margin-bottom: 8px;
+        }
+        .header p { 
+            opacity: 0.9; 
+            font-size: 16px;
+        }
+        .urgent-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .content { 
+            padding: 32px 24px;
+        }
+        .greeting { 
+            font-size: 16px; 
+            margin-bottom: 24px; 
+            color: #4a5568;
+        }
+        .urgent-notice {
+            background: #fed7d7;
+            border: 1px solid #feb2b2;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            color: #742a2a;
+            font-weight: 500;
+        }
+        .card { 
+            background: #f7fafc; 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-left: 4px solid #e2e8f0;
+        }
+        .card.material { border-left-color: #4299e1; }
+        .card.urgent { border-left-color: #e53e3e; background: #fef5e7; }
+        .card h3 { 
+            font-size: 18px; 
+            font-weight: 600; 
+            margin-bottom: 16px; 
+            color: #2d3748;
+        }
+        .info-grid { 
+            display: grid; 
+            gap: 12px;
+        }
+        .info-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 8px 0;
+        }
+        .info-label { 
+            font-weight: 500; 
+            color: #4a5568; 
+            min-width: 120px;
+        }
+        .info-value { 
+            color: #2d3748; 
+            font-weight: 500; 
+            text-align: right;
+        }
+        .overdue-badge { 
+            background: #e53e3e; 
+            color: white; 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-size: 14px; 
+            font-weight: 500;
+        }
+        .status-badge { 
+            background: #ed8936; 
+            color: white; 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-size: 14px; 
+            font-weight: 500;
+        }
+        .action-text {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+            color: #742a2a;
+            line-height: 1.6;
+        }
+        .cta { 
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            color: white; 
+            padding: 16px 24px; 
+            border-radius: 8px; 
+            text-align: center; 
+            margin: 24px 0; 
+            text-decoration: none; 
+            display: block; 
+            font-weight: 500;
+            animation: pulse 2s infinite;
+        }
+        .footer { 
+            background: #f7fafc; 
+            padding: 24px; 
+            text-align: center; 
+            border-top: 1px solid #e2e8f0; 
+            font-size: 14px; 
+            color: #718096;
+        }
+        .footer p { margin: 4px 0; }
+        @media (max-width: 600px) {
+            .container { margin: 0; box-shadow: none; }
+            .content { padding: 24px 16px; }
+            .header { padding: 24px 16px; }
+            .info-item { flex-direction: column; align-items: flex-start; }
+            .info-value { text-align: left; margin-top: 4px; }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2>🚨 URGENT: Workflow Overdue</h2>
-    </div>
-    
-    <div class="content">
-        <p>Hello,</p>
-        
-        <p><strong>URGENT:</strong> The following MSDS workflow is overdue and requires immediate attention.</p>
-        
-        <div class="material-info">
-            <h4>Material Information:</h4>
-            <ul>
-                <li><strong>Material Code:</strong> <span th:text="${workflow.materialCode}">MAT-001</span></li>
-                <li><strong>Material Name:</strong> <span th:text="${workflow.materialName ?: 'N/A'}">Sample Material</span></li>
-                <li><strong>Assigned Plant:</strong> <span th:text="${workflow.assignedPlant}">Plant A</span></li>
-                <li><strong>Current State:</strong> <span th:text="${workflow.state.displayName}">Plant Pending</span></li>
-                <li><strong>Days Pending:</strong> <span th:text="${workflow.daysPending}">7</span> days</li>
-                <li><strong>Created Date:</strong> <span th:text="${#temporals.format(workflow.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-08 09:00</span></li>
-            </ul>
+    <div class="container">
+        <div class="header">
+            <div class="urgent-icon">🚨</div>
+            <h1>URGENT: Workflow Overdue</h1>
+            <p>Immediate action required to resolve this workflow</p>
         </div>
         
-        <div class="urgent">
-            <h4>Immediate Action Required:</h4>
-            <div th:if="${workflow.state.name() == 'JVC_PENDING'}">
-                <p><strong>JVC Team:</strong> Please extend this workflow to the assigned plant or take appropriate action.</p>
-            </div>
-            <div th:if="${workflow.state.name() == 'PLANT_PENDING'}">
-                <p><strong>Plant Team:</strong> Please complete the MSDS questionnaire or raise queries for clarification.</p>
-            </div>
-            <div th:if="${workflow.state.name() == 'CQS_PENDING'}">
-                <p><strong>CQS Team:</strong> Please resolve the pending queries to unblock the workflow.</p>
-            </div>
-            <div th:if="${workflow.state.name() == 'TECH_PENDING'}">
-                <p><strong>Technology Team:</strong> Please resolve the pending queries to unblock the workflow.</p>
+        <div class="content">
+            <p class="greeting">Hello,</p>
+            
+            <div class="urgent-notice">
+                <strong>URGENT:</strong> The following MSDS workflow has exceeded the standard processing time and requires immediate attention.
             </div>
             
-            <p>This workflow has exceeded the standard processing time and may impact compliance deadlines.</p>
+            <div class="card material">
+                <h3>Material Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Material Code</span>
+                        <span class="info-value" th:text="${workflow.materialCode}">MAT-001</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Material Name</span>
+                        <span class="info-value" th:text="${workflow.materialName ?: 'N/A'}">Sample Material</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Assigned Plant</span>
+                        <span class="info-value" th:text="${workflow.assignedPlant}">Plant A</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Current State</span>
+                        <span class="info-value">
+                            <span class="status-badge" th:text="${workflow.state.displayName}">Plant Pending</span>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Days Pending</span>
+                        <span class="info-value">
+                            <span class="overdue-badge"><span th:text="${workflow.daysPending}">7</span> days</span>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Created Date</span>
+                        <span class="info-value" th:text="${#temporals.format(workflow.createdAt, 'MMM dd, yyyy HH:mm')}">Jan 08, 2024 09:00</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card urgent">
+                <h3>Immediate Action Required</h3>
+                <div class="action-text">
+                    <div th:if="${workflow.state.name() == 'JVC_PENDING'}">
+                        <strong>JVC Team:</strong> Please extend this workflow to the assigned plant or take appropriate action to move the process forward.
+                    </div>
+                    <div th:if="${workflow.state.name() == 'PLANT_PENDING'}">
+                        <strong>Plant Team:</strong> Please complete the MSDS questionnaire or raise queries for clarification to continue the workflow.
+                    </div>
+                    <div th:if="${workflow.state.name() == 'CQS_PENDING'}">
+                        <strong>CQS Team:</strong> Please resolve the pending queries to unblock the workflow and allow the plant team to proceed.
+                    </div>
+                    <div th:if="${workflow.state.name() == 'TECH_PENDING'}">
+                        <strong>Technology Team:</strong> Please resolve the pending queries to unblock the workflow and ensure compliance deadlines are met.
+                    </div>
+                    
+                    <p style="margin-top: 12px; font-weight: 500;">This workflow may impact compliance deadlines and requires immediate attention.</p>
+                </div>
+            </div>
+            
+            <div class="cta">
+                Address Overdue Workflow
+            </div>
         </div>
         
-        <p>Please log into the QRMFG portal immediately to address this overdue workflow.</p>
-    </div>
-    
-    <div class="footer">
-        <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
-        <p>Please do not reply to this email.</p>
+        <div class="footer">
+            <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
+            <p>Please do not reply to this email.</p>
+        </div>
     </div>
 </body>
 </html>
