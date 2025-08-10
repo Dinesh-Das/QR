@@ -41,7 +41,6 @@ export const ALERT_TYPES = {
  */
 export const NOTIFICATION_CHANNELS = {
   EMAIL: 'EMAIL',
-  SLACK: 'SLACK',
   SMS: 'SMS',
   WEBHOOK: 'WEBHOOK',
   PUSH: 'PUSH',
@@ -75,7 +74,7 @@ const ALERT_CONFIG = {
       medium: 2          // 2 events in 5 minutes
     }
   },
-  
+
   // Escalation rules
   escalation: {
     timeouts: {
@@ -87,7 +86,7 @@ const ALERT_CONFIG = {
     retryAttempts: 3,
     backoffMultiplier: 2
   },
-  
+
   // Channel configurations
   channels: {
     [NOTIFICATION_CHANNELS.EMAIL]: {
@@ -97,15 +96,6 @@ const ALERT_CONFIG = {
         [ALERT_SEVERITY.HIGH]: ['ops@qrmfg.com'],
         [ALERT_SEVERITY.MEDIUM]: ['dev@qrmfg.com'],
         [ALERT_SEVERITY.LOW]: ['dev@qrmfg.com']
-      }
-    },
-    [NOTIFICATION_CHANNELS.SLACK]: {
-      enabled: true,
-      channels: {
-        [ALERT_SEVERITY.CRITICAL]: '#critical-alerts',
-        [ALERT_SEVERITY.HIGH]: '#alerts',
-        [ALERT_SEVERITY.MEDIUM]: '#monitoring',
-        [ALERT_SEVERITY.LOW]: '#monitoring'
       }
     },
     [NOTIFICATION_CHANNELS.SMS]: {
@@ -136,7 +126,7 @@ class Alert {
   }
 
   generateId() {
-    return `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `alert_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 
   acknowledge(userId) {
@@ -169,17 +159,17 @@ class AlertingSystem {
     this.escalationTimers = new Map();
     this.notificationQueue = [];
     this.isProcessing = false;
-    
+
     this.initializeSystem();
   }
 
   initializeSystem() {
     // Start notification processor
     this.startNotificationProcessor();
-    
+
     // Initialize security monitoring integration
     this.initializeSecurityIntegration();
-    
+
     // Start health checks
     this.startHealthChecks();
   }
@@ -190,7 +180,7 @@ class AlertingSystem {
   async createAlert(type, severity, message, metadata = {}) {
     try {
       const alert = new Alert(type, severity, message, metadata);
-      
+
       // Check for suppression rules
       if (this.isAlertSuppressed(alert)) {
         console.log(`Alert suppressed: ${alert.id}`);
@@ -227,7 +217,7 @@ class AlertingSystem {
    */
   async processAlert(alert) {
     const channels = this.getNotificationChannels(alert.severity);
-    
+
     for (const channel of channels) {
       await this.queueNotification(alert, channel);
     }
@@ -238,24 +228,22 @@ class AlertingSystem {
    */
   getNotificationChannels(severity) {
     const channels = [];
-    
+
     Object.entries(ALERT_CONFIG.channels).forEach(([channelType, config]) => {
       if (config.enabled && this.shouldNotifyChannel(channelType, severity)) {
         channels.push(channelType);
       }
     });
-    
+
     return channels;
   }
 
   shouldNotifyChannel(channelType, severity) {
     const config = ALERT_CONFIG.channels[channelType];
-    
+
     switch (channelType) {
       case NOTIFICATION_CHANNELS.EMAIL:
         return config.recipients[severity] && config.recipients[severity].length > 0;
-      case NOTIFICATION_CHANNELS.SLACK:
-        return config.channels[severity];
       case NOTIFICATION_CHANNELS.SMS:
         return severity === ALERT_SEVERITY.CRITICAL || severity === ALERT_SEVERITY.HIGH;
       default:
@@ -294,12 +282,12 @@ class AlertingSystem {
   async processNotificationQueue() {
     while (this.notificationQueue.length > 0) {
       const notification = this.notificationQueue.shift();
-      
+
       try {
         await this.sendNotification(notification);
       } catch (error) {
         console.error('Notification failed:', error);
-        
+
         // Retry logic
         if (notification.attempts < ALERT_CONFIG.escalation.retryAttempts) {
           notification.attempts++;
@@ -316,13 +304,10 @@ class AlertingSystem {
    */
   async sendNotification(notification) {
     const { alert, channel } = notification;
-    
+
     switch (channel) {
       case NOTIFICATION_CHANNELS.EMAIL:
         await this.sendEmailNotification(alert);
-        break;
-      case NOTIFICATION_CHANNELS.SLACK:
-        await this.sendSlackNotification(alert);
         break;
       case NOTIFICATION_CHANNELS.SMS:
         await this.sendSMSNotification(alert);
@@ -336,7 +321,7 @@ class AlertingSystem {
       default:
         console.warn(`Unknown notification channel: ${channel}`);
     }
-    
+
     alert.notificationsSent.push({
       channel,
       timestamp: new Date(),
@@ -350,31 +335,15 @@ class AlertingSystem {
   async sendEmailNotification(alert) {
     const config = ALERT_CONFIG.channels[NOTIFICATION_CHANNELS.EMAIL];
     const recipients = config.recipients[alert.severity] || [];
-    
+
     if (recipients.length === 0) return;
-    
+
     const emailContent = this.formatEmailContent(alert);
-    
+
     // Simulate email sending (replace with actual email service)
     console.log(`📧 Email sent to ${recipients.join(', ')}`);
     console.log(`Subject: [${alert.severity}] ${alert.type} Alert`);
     console.log(`Content: ${emailContent}`);
-  }
-
-  /**
-   * Send Slack notification
-   */
-  async sendSlackNotification(alert) {
-    const config = ALERT_CONFIG.channels[NOTIFICATION_CHANNELS.SLACK];
-    const channel = config.channels[alert.severity];
-    
-    if (!channel) return;
-    
-    const slackMessage = this.formatSlackMessage(alert);
-    
-    // Simulate Slack sending (replace with actual Slack API)
-    console.log(`💬 Slack message sent to ${channel}`);
-    console.log(`Message: ${slackMessage}`);
   }
 
   /**
@@ -383,11 +352,11 @@ class AlertingSystem {
   async sendSMSNotification(alert) {
     const config = ALERT_CONFIG.channels[NOTIFICATION_CHANNELS.SMS];
     const numbers = config.numbers[alert.severity] || [];
-    
+
     if (numbers.length === 0) return;
-    
+
     const smsContent = this.formatSMSContent(alert);
-    
+
     // Simulate SMS sending (replace with actual SMS service)
     console.log(`📱 SMS sent to ${numbers.join(', ')}`);
     console.log(`Content: ${smsContent}`);
@@ -407,7 +376,7 @@ class AlertingSystem {
         metadata: alert.metadata
       }
     };
-    
+
     // Simulate webhook sending (replace with actual HTTP request)
     console.log('🔗 Webhook notification sent');
     console.log('Payload:', JSON.stringify(webhookPayload, null, 2));
@@ -424,7 +393,7 @@ class AlertingSystem {
       [ALERT_SEVERITY.LOW]: 'ℹ️',
       [ALERT_SEVERITY.INFO]: '📝'
     };
-    
+
     console.log(`${severityEmoji[alert.severity]} [${alert.severity}] ${alert.type}: ${alert.message}`);
     if (Object.keys(alert.metadata).length > 0) {
       console.log('Metadata:', alert.metadata);
@@ -448,23 +417,7 @@ Please investigate and take appropriate action.
     `.trim();
   }
 
-  /**
-   * Format Slack message
-   */
-  formatSlackMessage(alert) {
-    const severityColor = {
-      [ALERT_SEVERITY.CRITICAL]: '#FF0000',
-      [ALERT_SEVERITY.HIGH]: '#FF8C00',
-      [ALERT_SEVERITY.MEDIUM]: '#FFD700',
-      [ALERT_SEVERITY.LOW]: '#32CD32',
-      [ALERT_SEVERITY.INFO]: '#87CEEB'
-    };
-    
-    return `🚨 *${alert.severity}* Alert: ${alert.type}
-*Message:* ${alert.message}
-*Time:* ${alert.timestamp.toISOString()}
-*Alert ID:* ${alert.id}`;
-  }
+
 
   /**
    * Format SMS content
@@ -480,15 +433,15 @@ Please investigate and take appropriate action.
     if (alert.severity === ALERT_SEVERITY.INFO || alert.severity === ALERT_SEVERITY.LOW) {
       return; // No escalation for low priority alerts
     }
-    
+
     const timeout = ALERT_CONFIG.escalation.timeouts[alert.severity.toLowerCase()];
-    
+
     const timer = setTimeout(async () => {
       if (!alert.acknowledged && !alert.resolved) {
         await this.escalateAlert(alert);
       }
     }, timeout);
-    
+
     this.escalationTimers.set(alert.id, timer);
   }
 
@@ -497,7 +450,7 @@ Please investigate and take appropriate action.
    */
   async escalateAlert(alert) {
     alert.escalate();
-    
+
     // Log escalation
     await securityMonitoring.logSecurityEvent(
       SECURITY_EVENT_TYPES.ALERT_ESCALATED,
@@ -505,10 +458,10 @@ Please investigate and take appropriate action.
       `Alert escalated: ${alert.id}`,
       { alertId: alert.id, originalSeverity: alert.severity }
     );
-    
+
     // Send escalation notifications
     await this.sendEscalationNotifications(alert);
-    
+
     console.log(`🔺 Alert escalated: ${alert.id}`);
   }
 
@@ -518,7 +471,7 @@ Please investigate and take appropriate action.
   async sendEscalationNotifications(alert) {
     // Send to critical channels regardless of original severity
     const criticalChannels = this.getNotificationChannels(ALERT_SEVERITY.CRITICAL);
-    
+
     for (const channel of criticalChannels) {
       await this.queueNotification(alert, channel);
     }
@@ -532,16 +485,16 @@ Please investigate and take appropriate action.
     if (!alert) {
       throw new Error(`Alert not found: ${alertId}`);
     }
-    
+
     alert.acknowledge(userId);
-    
+
     // Clear escalation timer
     const timer = this.escalationTimers.get(alertId);
     if (timer) {
       clearTimeout(timer);
       this.escalationTimers.delete(alertId);
     }
-    
+
     // Log acknowledgment
     await securityMonitoring.logSecurityEvent(
       SECURITY_EVENT_TYPES.ALERT_ACKNOWLEDGED,
@@ -549,7 +502,7 @@ Please investigate and take appropriate action.
       `Alert acknowledged: ${alertId}`,
       { alertId, userId }
     );
-    
+
     console.log(`✅ Alert acknowledged: ${alertId} by ${userId}`);
     return alert;
   }
@@ -562,17 +515,17 @@ Please investigate and take appropriate action.
     if (!alert) {
       throw new Error(`Alert not found: ${alertId}`);
     }
-    
+
     alert.resolve(userId, resolution);
     this.activeAlerts.delete(alertId);
-    
+
     // Clear escalation timer
     const timer = this.escalationTimers.get(alertId);
     if (timer) {
       clearTimeout(timer);
       this.escalationTimers.delete(alertId);
     }
-    
+
     // Log resolution
     await securityMonitoring.logSecurityEvent(
       SECURITY_EVENT_TYPES.ALERT_RESOLVED,
@@ -580,7 +533,7 @@ Please investigate and take appropriate action.
       `Alert resolved: ${alertId}`,
       { alertId, userId, resolution }
     );
-    
+
     console.log(`✅ Alert resolved: ${alertId} by ${userId}`);
     return alert;
   }
@@ -590,13 +543,13 @@ Please investigate and take appropriate action.
    */
   isAlertSuppressed(alert) {
     // Check for duplicate alerts within time window
-    const recentAlerts = Array.from(this.alerts.values()).filter(existingAlert => 
+    const recentAlerts = Array.from(this.alerts.values()).filter(existingAlert =>
       existingAlert.type === alert.type &&
       existingAlert.severity === alert.severity &&
       (Date.now() - existingAlert.timestamp.getTime()) < 300000 && // 5 minutes
       !existingAlert.resolved
     );
-    
+
     return recentAlerts.length > 0;
   }
 
@@ -619,31 +572,31 @@ Please investigate and take appropriate action.
    */
   getAlerts(criteria = {}) {
     let alerts = Array.from(this.alerts.values());
-    
+
     if (criteria.type) {
       alerts = alerts.filter(alert => alert.type === criteria.type);
     }
-    
+
     if (criteria.severity) {
       alerts = alerts.filter(alert => alert.severity === criteria.severity);
     }
-    
+
     if (criteria.resolved !== undefined) {
       alerts = alerts.filter(alert => alert.resolved === criteria.resolved);
     }
-    
+
     if (criteria.acknowledged !== undefined) {
       alerts = alerts.filter(alert => alert.acknowledged === criteria.acknowledged);
     }
-    
+
     if (criteria.startTime) {
       alerts = alerts.filter(alert => alert.timestamp >= criteria.startTime);
     }
-    
+
     if (criteria.endTime) {
       alerts = alerts.filter(alert => alert.timestamp <= criteria.endTime);
     }
-    
+
     return alerts.sort((a, b) => b.timestamp - a.timestamp);
   }
 
@@ -683,7 +636,7 @@ Please investigate and take appropriate action.
     try {
       // Check system metrics
       const metrics = await this.getSystemMetrics();
-      
+
       // Check error rate
       if (metrics.errorRate > ALERT_CONFIG.thresholds.errorRate.critical) {
         await this.createAlert(
@@ -700,7 +653,7 @@ Please investigate and take appropriate action.
           { errorRate: metrics.errorRate, threshold: ALERT_CONFIG.thresholds.errorRate.high }
         );
       }
-      
+
       // Check response time
       if (metrics.responseTime > ALERT_CONFIG.thresholds.responseTime.critical) {
         await this.createAlert(
@@ -710,7 +663,7 @@ Please investigate and take appropriate action.
           { responseTime: metrics.responseTime, threshold: ALERT_CONFIG.thresholds.responseTime.critical }
         );
       }
-      
+
       // Check memory usage
       if (metrics.memoryUsage > ALERT_CONFIG.thresholds.memoryUsage.critical) {
         await this.createAlert(
@@ -720,7 +673,7 @@ Please investigate and take appropriate action.
           { memoryUsage: metrics.memoryUsage, threshold: ALERT_CONFIG.thresholds.memoryUsage.critical }
         );
       }
-      
+
     } catch (error) {
       console.error('Health check failed:', error);
       await this.createAlert(
@@ -751,7 +704,7 @@ Please investigate and take appropriate action.
     const cutoffTime = new Date(Date.now() - timeRange);
     const recentAlerts = Array.from(this.alerts.values())
       .filter(alert => alert.timestamp >= cutoffTime);
-    
+
     const stats = {
       total: recentAlerts.length,
       active: this.activeAlerts.size,
@@ -761,17 +714,17 @@ Please investigate and take appropriate action.
       bySeverity: {},
       byType: {}
     };
-    
+
     // Count by severity
     Object.values(ALERT_SEVERITY).forEach(severity => {
       stats.bySeverity[severity] = recentAlerts.filter(alert => alert.severity === severity).length;
     });
-    
+
     // Count by type
     Object.values(ALERT_TYPES).forEach(type => {
       stats.byType[type] = recentAlerts.filter(alert => alert.type === type).length;
     });
-    
+
     return stats;
   }
 }
@@ -780,20 +733,19 @@ Please investigate and take appropriate action.
 export const alertingSystem = new AlertingSystem();
 
 // Convenience functions for creating specific alert types
-export const createSecurityAlert = (severity, message, metadata) => 
+export const createSecurityAlert = (severity, message, metadata) =>
   alertingSystem.createAlert(ALERT_TYPES.SECURITY_INCIDENT, severity, message, metadata);
 
-export const createPerformanceAlert = (severity, message, metadata) => 
+export const createPerformanceAlert = (severity, message, metadata) =>
   alertingSystem.createAlert(ALERT_TYPES.PERFORMANCE_DEGRADATION, severity, message, metadata);
 
-export const createSystemErrorAlert = (severity, message, metadata) => 
+export const createSystemErrorAlert = (severity, message, metadata) =>
   alertingSystem.createAlert(ALERT_TYPES.SYSTEM_ERROR, severity, message, metadata);
 
-export const createHealthCheckAlert = (severity, message, metadata) => 
+export const createHealthCheckAlert = (severity, message, metadata) =>
   alertingSystem.createAlert(ALERT_TYPES.HEALTH_CHECK_FAILURE, severity, message, metadata);
 
 // Export the Alert class for external use
 export { Alert };
 
 export default alertingSystem;
-     

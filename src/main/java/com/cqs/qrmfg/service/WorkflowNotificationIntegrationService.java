@@ -152,13 +152,12 @@ public class WorkflowNotificationIntegrationService {
     public boolean validateNotificationIntegration() {
         try {
             boolean emailEnabled = notificationService.isEmailEnabled();
-            boolean slackEnabled = notificationService.isSlackEnabled();
             boolean notificationsEnabled = notificationService.isNotificationEnabled();
             
-            logger.info("Notification integration status - Enabled: {}, Email: {}, Slack: {}", 
-                       notificationsEnabled, emailEnabled, slackEnabled);
+            logger.info("Notification integration status - Enabled: {}, Email: {}", 
+                       notificationsEnabled, emailEnabled);
             
-            return notificationsEnabled && (emailEnabled || slackEnabled);
+            return notificationsEnabled && emailEnabled;
         } catch (Exception e) {
             logger.error("Failed to validate notification integration: {}", e.getMessage(), e);
             return false;

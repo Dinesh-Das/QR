@@ -9,7 +9,6 @@ public class NotificationConfig {
     
     private boolean enabled = true;
     private Email email = new Email();
-    private Slack slack = new Slack();
     private Template template = new Template();
     private Retry retry = new Retry();
     
@@ -53,25 +52,7 @@ public class NotificationConfig {
         public void setAuthEnabled(boolean authEnabled) { this.authEnabled = authEnabled; }
     }
     
-    public static class Slack {
-        private boolean enabled = false;
-        private String botToken;
-        private String webhookUrl;
-        private String defaultChannel = "#workflow-notifications";
-        
-        // Getters and setters
-        public boolean isEnabled() { return enabled; }
-        public void setEnabled(boolean enabled) { this.enabled = enabled; }
-        
-        public String getBotToken() { return botToken; }
-        public void setBotToken(String botToken) { this.botToken = botToken; }
-        
-        public String getWebhookUrl() { return webhookUrl; }
-        public void setWebhookUrl(String webhookUrl) { this.webhookUrl = webhookUrl; }
-        
-        public String getDefaultChannel() { return defaultChannel; }
-        public void setDefaultChannel(String defaultChannel) { this.defaultChannel = defaultChannel; }
-    }
+
     
     public static class Template {
         private String basePath = "classpath:/templates/notifications/";
@@ -107,9 +88,6 @@ public class NotificationConfig {
     
     public Email getEmail() { return email; }
     public void setEmail(Email email) { this.email = email; }
-    
-    public Slack getSlack() { return slack; }
-    public void setSlack(Slack slack) { this.slack = slack; }
     
     public Template getTemplate() { return template; }
     public void setTemplate(Template template) { this.template = template; }

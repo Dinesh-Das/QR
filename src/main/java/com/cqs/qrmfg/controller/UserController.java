@@ -29,7 +29,13 @@ public class UserController {
     private NotificationService notificationService;
     
     @Autowired
+    private com.cqs.qrmfg.config.DefaultNotificationPreferencesConfig defaultNotificationConfig;
+    
+    @Autowired
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    
+    @Autowired
+    private com.cqs.qrmfg.service.DefaultNotificationPreferenceService defaultNotificationPreferenceService;
 
     @GetMapping
     public List<User> getAllUsers() {
@@ -62,7 +68,23 @@ public class UserController {
         }
         
         // Use JPA repository instead of JDBC service for consistency
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        
+        // Create default notification preferences for the new user
+        try {
+            if (savedUser.getEmail() != null && !savedUser.getEmail().trim().isEmpty()) {
+                defaultNotificationPreferenceService.createDefaultPreferencesForNewUser(
+                    savedUser.getUsername(), 
+                    savedUser.getEmail()
+                );
+            }
+        } catch (Exception e) {
+            // Log the error but don't fail user creation
+            System.err.println("Warning: Failed to create default notification preferences for user " + 
+                             savedUser.getUsername() + ": " + e.getMessage());
+        }
+        
+        return savedUser;
     }
 
     @PutMapping("/{id}")
@@ -111,33 +133,41 @@ public class UserController {
         
         Map<String, Object> result = new HashMap<>();
         Map<String, Object> email = new HashMap<>();
-        Map<String, Object> slack = new HashMap<>();
         Map<String, Object> general = new HashMap<>();
         
-        // Initialize default values
-        email.put("enabled", true);
-        email.put("address", username + "@company.com");
-        email.put("workflowCreated", true);
-        email.put("workflowExtended", true);
-        email.put("workflowCompleted", true);
-        email.put("workflowStateChanged", true);
-        email.put("workflowOverdue", true);
-        email.put("queryRaised", true);
-        email.put("queryResolved", true);
-        email.put("queryAssigned", true);
-        email.put("queryOverdue", true);
+        // Get user's role to determine defaults
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        String userRole = "GENERAL"; // fallback
+        if (userOpt.isPresent() && userOpt.get().getRoles() != null && !userOpt.get().getRoles().isEmpty()) {
+            String roleName = userOpt.get().getRoles().iterator().next().getName();
+            // Convert role name to match config format (e.g., "ROLE_JVC_USER" -> "JVC")
+            if (roleName.startsWith("ROLE_") && roleName.endsWith("_USER")) {
+                userRole = roleName.substring(5, roleName.length() - 5);
+            } else if (roleName.startsWith("ROLE_")) {
+                userRole = roleName.substring(5);
+            } else {
+                userRole = roleName;
+            }
+        }
         
-        slack.put("enabled", false);
-        slack.put("userId", "");
-        slack.put("workflowCreated", false);
-        slack.put("workflowExtended", true);
-        slack.put("workflowCompleted", true);
-        slack.put("workflowStateChanged", false);
-        slack.put("workflowOverdue", true);
-        slack.put("queryRaised", true);
-        slack.put("queryResolved", true);
-        slack.put("queryAssigned", true);
-        slack.put("queryOverdue", true);
+        // Get defaults from admin configuration
+        Map<String, Boolean> roleDefaults = defaultNotificationConfig.getPreferencesForRole(userRole);
+        
+        // Initialize default values using admin configuration
+        email.put("enabled", true);
+        email.put("address", userOpt.isPresent() && userOpt.get().getEmail() != null ? 
+                  userOpt.get().getEmail() : username + "@company.com");
+        
+        // Use admin-configured defaults instead of hardcoded values
+        email.put("workflowCreated", roleDefaults.getOrDefault("WORKFLOW_CREATED", true));
+        email.put("workflowExtended", roleDefaults.getOrDefault("WORKFLOW_EXTENDED", true));
+        email.put("workflowCompleted", roleDefaults.getOrDefault("WORKFLOW_COMPLETED", true));
+        email.put("workflowStateChanged", roleDefaults.getOrDefault("WORKFLOW_STATE_CHANGED", false));
+        email.put("workflowOverdue", roleDefaults.getOrDefault("WORKFLOW_OVERDUE", true));
+        email.put("queryRaised", roleDefaults.getOrDefault("QUERY_RAISED", true));
+        email.put("queryResolved", roleDefaults.getOrDefault("QUERY_RESOLVED", true));
+        email.put("queryAssigned", roleDefaults.getOrDefault("QUERY_ASSIGNED", true));
+        email.put("queryOverdue", roleDefaults.getOrDefault("QUERY_OVERDUE", true));
         
         Map<String, Object> quietHours = new HashMap<>();
         quietHours.put("enabled", false);
@@ -147,27 +177,48 @@ public class UserController {
         general.put("frequency", "immediate");
         general.put("quietHours", quietHours);
         
-        // Override with actual preferences
+        // Override with actual preferences from database
         for (NotificationPreference pref : preferences) {
             if ("EMAIL".equalsIgnoreCase(pref.getChannel())) {
                 email.put("enabled", pref.isEnabled());
                 if (pref.getEmail() != null) {
                     email.put("address", pref.getEmail());
                 }
-                // Set specific notification type preferences based on preference data
-                if (pref.getPreferenceData() != null) {
-                    // Parse JSON preference data if needed
-                }
-            } else if ("SLACK".equalsIgnoreCase(pref.getChannel())) {
-                slack.put("enabled", pref.isEnabled());
-                if (pref.getSlackId() != null) {
-                    slack.put("userId", pref.getSlackId());
+                
+                // Map specific notification types based on the preference type
+                String notificationType = pref.getNotificationType();
+                if (notificationType != null) {
+                    switch (notificationType) {
+                        case "WORKFLOW_CREATED":
+                            email.put("workflowCreated", pref.isEnabled());
+                            break;
+                        case "WORKFLOW_COMPLETED":
+                            email.put("workflowCompleted", pref.isEnabled());
+                            break;
+                        case "WORKFLOW_STATE_CHANGED":
+                            email.put("workflowStateChanged", pref.isEnabled());
+                            break;
+                        case "WORKFLOW_OVERDUE":
+                            email.put("workflowOverdue", pref.isEnabled());
+                            break;
+                        case "QUERY_RAISED":
+                            email.put("queryRaised", pref.isEnabled());
+                            break;
+                        case "QUERY_RESOLVED":
+                            email.put("queryResolved", pref.isEnabled());
+                            break;
+                        case "QUERY_ASSIGNED":
+                            email.put("queryAssigned", pref.isEnabled());
+                            break;
+                        case "QUERY_OVERDUE":
+                            email.put("queryOverdue", pref.isEnabled());
+                            break;
+                    }
                 }
             }
         }
         
         result.put("email", email);
-        result.put("slack", slack);
         result.put("general", general);
         
         return ResponseEntity.ok(result);
@@ -179,44 +230,59 @@ public class UserController {
             @RequestBody Map<String, Object> preferences) {
         
         try {
-            // Clear existing preferences
-            List<NotificationPreference> existingPrefs = notificationPreferenceRepository.findActivePreferencesForUser(username);
-            for (NotificationPreference pref : existingPrefs) {
-                pref.setEnabled(false);
+            // Get email preferences
+            Map<String, Object> emailPrefs = (Map<String, Object>) preferences.get("email");
+            if (emailPrefs == null) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Email preferences are required");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+            
+            String emailAddress = (String) emailPrefs.get("address");
+            if (emailAddress == null || emailAddress.trim().isEmpty()) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Email address is required");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+            
+            // Update or create notification preferences for each type
+            String[] notificationTypes = {
+                "WORKFLOW_CREATED", "WORKFLOW_COMPLETED", "WORKFLOW_STATE_CHANGED", 
+                "WORKFLOW_OVERDUE", "QUERY_RAISED", "QUERY_RESOLVED", 
+                "QUERY_ASSIGNED", "QUERY_OVERDUE"
+            };
+            
+            for (String notificationType : notificationTypes) {
+                // Get the preference setting from the request
+                String prefKey = convertToFrontendKey(notificationType);
+                Boolean isEnabled = (Boolean) emailPrefs.get(prefKey);
+                if (isEnabled == null) isEnabled = false;
+                
+                // Find existing preference or create new one
+                NotificationPreference pref = notificationPreferenceRepository
+                    .findByUsernameAndNotificationTypeAndChannel(username, notificationType, "EMAIL");
+                
+                if (pref == null) {
+                    pref = new NotificationPreference();
+                    pref.setUsername(username);
+                    pref.setNotificationType(notificationType);
+                    pref.setChannel("EMAIL");
+                    pref.setCreatedBy(username);
+                }
+                
+                pref.setEnabled(isEnabled);
+                pref.setEmail(emailAddress);
+                pref.setUpdatedBy(username);
+                
                 notificationPreferenceRepository.save(pref);
             }
-            
-            // Create new email preferences
-            Map<String, Object> emailPrefs = (Map<String, Object>) preferences.get("email");
-            if (emailPrefs != null && (Boolean) emailPrefs.get("enabled")) {
-                NotificationPreference emailPref = new NotificationPreference();
-                emailPref.setUsername(username);
-                emailPref.setChannel("EMAIL");
-                emailPref.setEnabled(true);
-                emailPref.setEmail((String) emailPrefs.get("address"));
-                emailPref.setNotificationType("USER_" + username);
-                notificationPreferenceRepository.save(emailPref);
-            }
-            
-            // Create new slack preferences
-            Map<String, Object> slackPrefs = (Map<String, Object>) preferences.get("slack");
-            if (slackPrefs != null && (Boolean) slackPrefs.get("enabled")) {
-                NotificationPreference slackPref = new NotificationPreference();
-                slackPref.setUsername(username);
-                slackPref.setChannel("SLACK");
-                slackPref.setEnabled(true);
-                slackPref.setSlackId((String) slackPrefs.get("userId"));
-                slackPref.setNotificationType("USER_" + username);
-                notificationPreferenceRepository.save(slackPref);
-            }
-            
-            // Update notification service preferences
-            notificationService.updateNotificationPreferences(username, preferences.toString());
             
             return ResponseEntity.ok(preferences);
             
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to update preferences: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
     
@@ -340,6 +406,24 @@ public class UserController {
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    /**
+     * Convert backend notification type to frontend key
+     * e.g., "WORKFLOW_CREATED" -> "workflowCreated"
+     */
+    private String convertToFrontendKey(String notificationType) {
+        switch (notificationType) {
+            case "WORKFLOW_CREATED": return "workflowCreated";
+            case "WORKFLOW_COMPLETED": return "workflowCompleted";
+            case "WORKFLOW_STATE_CHANGED": return "workflowStateChanged";
+            case "WORKFLOW_OVERDUE": return "workflowOverdue";
+            case "QUERY_RAISED": return "queryRaised";
+            case "QUERY_RESOLVED": return "queryResolved";
+            case "QUERY_ASSIGNED": return "queryAssigned";
+            case "QUERY_OVERDUE": return "queryOverdue";
+            default: return notificationType.toLowerCase();
         }
     }
 } 

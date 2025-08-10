@@ -138,7 +138,6 @@ public class NotificationController {
             Map<String, Object> status = new HashMap<>();
             status.put("enabled", notificationService.isNotificationEnabled());
             status.put("emailEnabled", notificationService.isEmailEnabled());
-            status.put("slackEnabled", notificationService.isSlackEnabled());
             status.put("templatesAvailable", new HashMap<String, Object>() {{
                 put("workflowCreated", notificationService.isTemplateAvailable("notifications/workflow-created"));
                 put("workflowExtended", notificationService.isTemplateAvailable("notifications/workflow-extended"));

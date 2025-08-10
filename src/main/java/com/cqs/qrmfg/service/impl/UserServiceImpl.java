@@ -363,6 +363,9 @@ public class UserServiceImpl implements UserService {
         return userRepository.existsByEmail(email);
     }
     
+    @Autowired
+    private com.cqs.qrmfg.service.DefaultNotificationPreferenceService defaultNotificationPreferenceService;
+    
     @Override
     public User createUser(String username, String email, String password) {
         User user = new User();
@@ -371,7 +374,19 @@ public class UserServiceImpl implements UserService {
         user.setPassword(password);
         user.setEnabled(true);
         user.setStatus("ACTIVE");
-        return save(user);
+        
+        // Save the user first
+        User savedUser = save(user);
+        
+        // Create default notification preferences for the new user
+        try {
+            defaultNotificationPreferenceService.createDefaultPreferencesForNewUser(username, email);
+        } catch (Exception e) {
+            // Log the error but don't fail user creation
+            System.err.println("Warning: Failed to create default notification preferences for user " + username + ": " + e.getMessage());
+        }
+        
+        return savedUser;
     }
     
     @Override

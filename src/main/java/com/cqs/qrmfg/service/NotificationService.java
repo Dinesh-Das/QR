@@ -20,10 +20,7 @@ public interface NotificationService {
     NotificationResult sendEmailWithTemplate(List<String> recipients, String templateName, Object templateData);
     CompletableFuture<NotificationResult> sendEmailAsync(List<String> recipients, String subject, String message);
     
-    // Slack-specific methods
-    NotificationResult sendSlackMessage(String channel, String message);
-    NotificationResult sendSlackMessage(List<String> users, String message);
-    CompletableFuture<NotificationResult> sendSlackMessageAsync(String channel, String message);
+
     
     // Workflow-specific notification methods
     void notifyWorkflowCreated(Workflow workflow);
@@ -51,7 +48,6 @@ public interface NotificationService {
     // Configuration and preferences
     boolean isNotificationEnabled();
     boolean isEmailEnabled();
-    boolean isSlackEnabled();
     void updateNotificationPreferences(String username, String preferences);
     
     // Retry and error handling

@@ -121,11 +121,11 @@ public class QueryServiceImpl implements QueryService {
         // Send comprehensive notifications for query creation
         try {
             // Notify the assigned team about the new query
-            // notificationService.notifyQueryRaised(savedQuery);
+            notificationService.notifyQueryRaised(savedQuery);
             
             // Also notify as a query assignment to the team
-            // notificationService.notifyQueryAssigned(savedQuery, raisedBy);
-            logger.info("Query created successfully, notifications temporarily disabled for debugging");
+            notificationService.notifyQueryAssigned(savedQuery, raisedBy);
+            logger.info("Query created successfully, notifications sent to assigned team");
         } catch (Exception e) {
             logger.warn("Failed to send query raised notification for query {}: {}", 
                        savedQuery.getId(), e.getMessage());

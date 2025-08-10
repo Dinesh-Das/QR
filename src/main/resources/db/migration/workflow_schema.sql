@@ -142,7 +142,6 @@ CREATE TABLE QRMFG_NOTIFICATION_PREFERENCES (
     channel VARCHAR2(20) NOT NULL,
     enabled NUMBER(1) DEFAULT 1 NOT NULL,
     email VARCHAR2(255),
-    slack_id VARCHAR2(100),
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     created_by VARCHAR2(100),

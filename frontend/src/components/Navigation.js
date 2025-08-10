@@ -20,12 +20,12 @@ import { Layout, Menu, Button, Badge, Tooltip } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { 
-  isAuthenticated, 
-  isAdmin, 
-  removeToken, 
-  getCurrentUser, 
-  getPrimaryRoleType 
+import {
+  isAuthenticated,
+  isAdmin,
+  removeToken,
+  getCurrentUser,
+  getPrimaryRoleType
 } from '../services/auth';
 import RBACService from '../services/rbacService';
 
@@ -48,11 +48,11 @@ const Navigation = () => {
   const loadNavigationData = async () => {
     try {
       setLoading(true);
-      
+
       // Get user info
       const currentUser = getCurrentUser();
       const primaryRole = getPrimaryRoleType();
-      
+
       setUserInfo({
         username: currentUser,
         role: primaryRole
@@ -60,19 +60,11 @@ const Navigation = () => {
 
       // Get navigation items based on role
       const items = RBACService.getNavigationItems();
-      
-      // Get accessible screens from backend (with fallback)
-      try {
-        const accessibleScreens = await RBACService.getAccessibleScreens();
-        const filteredItems = items.filter(item => 
-          accessibleScreens.includes(item.path) || item.path === '/qrmfg/settings'
-        );
-        setNavigationItems(filteredItems);
-      } catch (error) {
-        console.warn('Using fallback navigation items:', error);
-        setNavigationItems(items);
-      }
-      
+
+      // Use the items directly - they're already filtered by role
+      console.log('Setting navigation items:', items);
+      setNavigationItems(items);
+
     } catch (error) {
       console.error('Error loading navigation data:', error);
       // Fallback to basic navigation
@@ -164,9 +156,10 @@ const Navigation = () => {
       {/* Navigation Menu */}
       <div
         style={{
-          height: 'calc(100vh - 160px)',
+          height: 'calc(100vh - 200px)',
           overflowY: 'auto',
-          overflowX: 'hidden'
+          overflowX: 'hidden',
+          paddingBottom: '20px'
         }}
       >
         {loading ? (
@@ -190,23 +183,23 @@ const Navigation = () => {
       {/* Footer with logout */}
       <div
         style={{
-          padding: collapsed ? '8px 8px' : '16px',
-          marginTop: 'auto',
-          marginBottom: '16px',
+          padding: collapsed ? '8px' : '16px',
           position: 'absolute',
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: '#001529'
+          backgroundColor: '#001529',
+          zIndex: 10,
+          borderTop: '1px solid #303030'
         }}
       >
         {!collapsed && userInfo && (
-          <div style={{ 
-            color: '#fff', 
-            fontSize: 12, 
-            marginBottom: 8, 
+          <div style={{
+            color: '#fff',
+            fontSize: 12,
+            marginBottom: 8,
             textAlign: 'center',
-            opacity: 0.7 
+            opacity: 0.7
           }}>
             {isAdmin() && (
               <Badge status="success" text="Admin Access" />

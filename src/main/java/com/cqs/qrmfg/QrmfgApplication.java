@@ -4,9 +4,11 @@ package com.cqs.qrmfg;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import com.cqs.qrmfg.config.DefaultNotificationPreferencesConfig;
 import com.cqs.qrmfg.model.User;
 import com.cqs.qrmfg.model.Role;
 import com.cqs.qrmfg.repository.UserRepository;
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 // Security configuration will be implemented in com.cqs.qrmfg.config according to Spring Security and JWT best practices.
 @SpringBootApplication
 @EnableScheduling
+@EnableConfigurationProperties(DefaultNotificationPreferencesConfig.class)
 public class QrmfgApplication {
 
 	@Autowired

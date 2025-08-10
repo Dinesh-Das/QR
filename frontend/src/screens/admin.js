@@ -2,9 +2,9 @@ import { Menu } from 'antd';
 import React from 'react';
 import { Link, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 
+import NotificationDefaults from '../components/NotificationDefaults';
 import { AdminOnly } from '../components/RoleBasedComponent';
 import { useRoleBasedAccess } from '../hooks/useRoleBasedAccess';
-
 
 import AuditLogs from './Auditlogs';
 import Roles from './Roles';
@@ -27,7 +27,8 @@ const AdminPanel = () => {
     { key: '/qrmfg/admin/auditlogs', label: 'Audit Logs' },
     { key: '/qrmfg/admin/sessions', label: 'Sessions' },
     { key: '/qrmfg/admin/workflow-monitoring', label: 'Workflow Monitoring' },
-    { key: '/qrmfg/admin/user-role-management', label: 'User Role Management' }
+    { key: '/qrmfg/admin/user-role-management', label: 'User Role Management' },
+    { key: '/qrmfg/admin/notification-defaults', label: 'Notification Defaults' }
   ];
 
   // If we're at /qrmfg/admin, redirect to /qrmfg/admin/users
@@ -58,6 +59,7 @@ const AdminPanel = () => {
             <Route path="sessions" element={<Sessions />} />
             <Route path="workflow-monitoring" element={<WorkflowMonitoring />} />
             <Route path="user-role-management" element={<UserRoleManagement />} />
+            <Route path="notification-defaults" element={<NotificationDefaults />} />
           </Routes>
         </div>
       </div>

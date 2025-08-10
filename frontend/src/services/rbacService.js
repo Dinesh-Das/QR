@@ -160,6 +160,9 @@ class RBACService {
    * @returns {Array} Array of navigation items user can access
    */
   static getNavigationItems() {
+    console.log('RBACService.getNavigationItems called');
+    console.log('User roles:', { isAdmin: isAdmin(), isJvcUser: isJvcUser(), isCqsUser: isCqsUser(), isTechUser: isTechUser(), isPlantUser: isPlantUser() });
+    
     const baseItems = [
       { key: '/qrmfg', icon: 'HomeOutlined', label: 'Home', path: '/qrmfg' },
       { key: '/qrmfg/dashboard', icon: 'DashboardOutlined', label: 'Dashboard', path: '/qrmfg/dashboard' }
@@ -167,16 +170,10 @@ class RBACService {
 
     const roleBasedItems = [];
 
-    // Admin gets all items
+    // Admin gets admin panel (individual admin screens are accessible through the admin panel)
     if (isAdmin()) {
       roleBasedItems.push(
-        { key: '/qrmfg/admin', icon: 'UserOutlined', label: 'Admin Panel', path: '/qrmfg/admin' },
-        { key: '/qrmfg/users', icon: 'UserOutlined', label: 'Users', path: '/qrmfg/users' },
-        { key: '/qrmfg/roles', icon: 'KeyOutlined', label: 'Roles', path: '/qrmfg/roles' },
-        { key: '/qrmfg/sessions', icon: 'ClockCircleOutlined', label: 'Sessions', path: '/qrmfg/sessions' },
-        { key: '/qrmfg/user-role-management', icon: 'UsergroupAddOutlined', label: 'User Role Management', path: '/qrmfg/user-role-management' },
-        { key: '/qrmfg/auditlogs', icon: 'AuditOutlined', label: 'Audit Logs', path: '/qrmfg/auditlogs' },
-        { key: '/qrmfg/api-test', icon: 'ApiOutlined', label: 'API Test', path: '/qrmfg/api-test' }
+        { key: '/qrmfg/admin', icon: 'UserOutlined', label: 'Admin Panel', path: '/qrmfg/admin' }
       );
     }
 
@@ -193,6 +190,14 @@ class RBACService {
       roleBasedItems.push(
         { key: '/qrmfg/tech', icon: 'TeamOutlined', label: 'TECH', path: '/qrmfg/tech' },
         { key: '/qrmfg/workflow-monitoring', icon: 'MonitorOutlined', label: 'Workflow Monitoring', path: '/qrmfg/workflow-monitoring' }
+      );
+    }
+
+    // Tech users get specific admin tools they need for their work
+    if (isTechUser() && !isAdmin()) {
+      roleBasedItems.push(
+        { key: '/qrmfg/auditlogs', icon: 'AuditOutlined', label: 'Audit Logs', path: '/qrmfg/auditlogs' },
+        { key: '/qrmfg/api-test', icon: 'ApiOutlined', label: 'API Test', path: '/qrmfg/api-test' }
       );
     }
 
@@ -214,7 +219,9 @@ class RBACService {
       { key: '/qrmfg/settings', icon: 'SettingOutlined', label: 'Settings', path: '/qrmfg/settings' }
     ];
 
-    return [...baseItems, ...roleBasedItems, ...settingsItems];
+    const finalItems = [...baseItems, ...roleBasedItems, ...settingsItems];
+    console.log('Final navigation items:', finalItems);
+    return finalItems;
   }
 
   // Fallback methods for when backend is unavailable
@@ -250,6 +257,7 @@ class RBACService {
       '/dashboard': true,
       '/settings': true,
       '/admin': isAdmin(),
+      // Admin panel screens are still accessible via direct URL but not shown in main navigation
       '/users': isAdmin(),
       '/roles': isAdmin(),
       '/sessions': isAdmin(),
@@ -269,33 +277,27 @@ class RBACService {
   }
 
   static getFallbackAccessibleScreens() {
-    const screens = ['/', '/dashboard', '/settings'];
+    const screens = ['/', '/dashboard', '/settings', '/qrmfg/settings'];
 
     if (isAdmin()) {
       return [
         ...screens,
-        '/admin',
-        '/users',
-        '/roles',
-        '/sessions',
-        '/user-role-management',
-        '/auditlogs',
-        '/api-test',
-        '/jvc',
-        '/cqs',
-        '/tech',
-        '/plant',
-        '/workflows',
-        '/workflow-monitoring',
-        '/reports'
+        '/qrmfg/admin',
+        '/qrmfg/jvc',
+        '/qrmfg/cqs',
+        '/qrmfg/tech',
+        '/qrmfg/plant',
+        '/qrmfg/workflows',
+        '/qrmfg/workflow-monitoring',
+        '/qrmfg/reports'
       ];
     }
 
-    if (isJvcUser()) screens.push('/jvc', '/workflows');
-    if (isCqsUser()) screens.push('/cqs', '/workflows');
-    if (isTechUser()) screens.push('/tech', '/workflows', '/workflow-monitoring', '/auditlogs', '/api-test');
-    if (isPlantUser()) screens.push('/plant', '/workflows');
-    if (!isViewer()) screens.push('/reports');
+    if (isJvcUser()) screens.push('/qrmfg/jvc', '/qrmfg/workflows');
+    if (isCqsUser()) screens.push('/qrmfg/cqs', '/qrmfg/workflows');
+    if (isTechUser()) screens.push('/qrmfg/tech', '/qrmfg/workflows', '/qrmfg/workflow-monitoring', '/qrmfg/auditlogs', '/qrmfg/api-test');
+    if (isPlantUser()) screens.push('/qrmfg/plant', '/qrmfg/workflows');
+    if (!isViewer()) screens.push('/qrmfg/reports');
 
     return [...new Set(screens)];
   }

@@ -864,39 +864,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
   ];
 
   // Function definitions (moved here to avoid hoisting issues)
-  const handleNext = useCallback(() => {
-    if (currentStep < questionnaireSteps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  }, [currentStep, questionnaireSteps.length]);
-
-  const handlePrevious = useCallback(() => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  }, [currentStep]);
-
-  const handleStepChange = useCallback(
-    step => {
-      if (step >= 0 && step < questionnaireSteps.length) {
-        setCurrentStep(step);
-      }
-    },
-    [questionnaireSteps.length]
-  );
-
-  // Helper function definitions
-  // const getStepForField = fieldName => { // Not currently used
-  //   for (let i = 0; i < questionnaireSteps.length; i++) {
-  //     if (questionnaireSteps[i].fields.some(field => field.name === fieldName)) {
-  //       return i;
-  //     }
-  //   }
-  //   return 0;
-  // };
-
-  // Fixed: Progress calculation now excludes CQS auto-populated fields
-  // CQS fields are disabled and auto-populated, so they shouldn't count towards user progress
   const getOverallCompletionPercentage = useCallback(() => {
     if (!questionnaireSteps || questionnaireSteps.length === 0 || !form) {
       return 0;
@@ -936,46 +903,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
     } catch (error) {
       console.error('Error calculating overall completion:', error);
       return 0;
-    }
-  }, [questionnaireSteps, formData, form]);
-
-  const getTotalFieldsPopulated = useCallback(() => {
-    if (!questionnaireSteps || questionnaireSteps.length === 0 || !form) {
-      return { total: 0, populated: 0 };
-    }
-
-    let totalFields = 0;
-    let populatedFields = 0;
-
-    try {
-      // Get current form values including any unsaved changes
-      const currentFormValues = form.getFieldsValue();
-      const currentData = { ...formData, ...currentFormValues };
-
-      questionnaireSteps.forEach(step => {
-        const stepFields = step.fields || [];
-        
-        // Filter out CQS auto-populated fields from total count
-        const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
-        totalFields += userEditableFields.length;
-
-        const populatedStepFields = userEditableFields.filter(field => {
-          const value = currentData[field.name];
-          if (Array.isArray(value)) {
-            return value.length > 0;
-          }
-          return value && value !== '' && value !== null && value !== undefined;
-        });
-
-        populatedFields += populatedStepFields.length;
-      });
-
-      // Total fields populated calculated (excluding CQS auto-populated fields)
-
-      return { total: totalFields, populated: populatedFields };
-    } catch (error) {
-      console.error('Error calculating total fields populated:', error);
-      return { total: 0, populated: 0 };
     }
   }, [questionnaireSteps, formData, form]);
 
@@ -1067,6 +994,118 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
     },
     [form, formData, workflowId, onSaveDraft, currentStep, completedSteps, isOffline, workflowData, getOverallCompletionPercentage]
   );
+
+  const handleNext = useCallback(async () => {
+    if (currentStep < questionnaireSteps.length - 1) {
+      // Save current form data before moving to next step
+      try {
+        const currentValues = form.getFieldsValue();
+        const updatedFormData = { ...formData, ...currentValues };
+        setFormData(updatedFormData);
+        
+        // Save to database
+        await handleSaveDraft(true); // Silent save
+        
+        setCurrentStep(currentStep + 1);
+      } catch (error) {
+        console.error('Failed to save data before moving to next step:', error);
+        message.warning('Failed to save current data. Please try again.');
+      }
+    }
+  }, [currentStep, questionnaireSteps.length, form, formData, handleSaveDraft]);
+
+  const handlePrevious = useCallback(async () => {
+    if (currentStep > 0) {
+      // Save current form data before moving to previous step
+      try {
+        const currentValues = form.getFieldsValue();
+        const updatedFormData = { ...formData, ...currentValues };
+        setFormData(updatedFormData);
+        
+        // Save to database
+        await handleSaveDraft(true); // Silent save
+        
+        setCurrentStep(currentStep - 1);
+      } catch (error) {
+        console.error('Failed to save data before moving to previous step:', error);
+        message.warning('Failed to save current data. Please try again.');
+      }
+    }
+  }, [currentStep, form, formData, handleSaveDraft]);
+
+  const handleStepChange = useCallback(
+    async (step) => {
+      if (step >= 0 && step < questionnaireSteps.length) {
+        // Save current form data before changing step
+        try {
+          const currentValues = form.getFieldsValue();
+          const updatedFormData = { ...formData, ...currentValues };
+          setFormData(updatedFormData);
+          
+          // Save to database
+          await handleSaveDraft(true); // Silent save
+          
+          setCurrentStep(step);
+        } catch (error) {
+          console.error('Failed to save data before changing step:', error);
+          message.warning('Failed to save current data. Please try again.');
+        }
+      }
+    },
+    [questionnaireSteps.length, form, formData, handleSaveDraft]
+  );
+
+  // Helper function definitions
+  // const getStepForField = fieldName => { // Not currently used
+  //   for (let i = 0; i < questionnaireSteps.length; i++) {
+  //     if (questionnaireSteps[i].fields.some(field => field.name === fieldName)) {
+  //       return i;
+  //     }
+  //   }
+  //   return 0;
+  // };
+
+
+
+  const getTotalFieldsPopulated = useCallback(() => {
+    if (!questionnaireSteps || questionnaireSteps.length === 0 || !form) {
+      return { total: 0, populated: 0 };
+    }
+
+    let totalFields = 0;
+    let populatedFields = 0;
+
+    try {
+      // Get current form values including any unsaved changes
+      const currentFormValues = form.getFieldsValue();
+      const currentData = { ...formData, ...currentFormValues };
+
+      questionnaireSteps.forEach(step => {
+        const stepFields = step.fields || [];
+        
+        // Filter out CQS auto-populated fields from total count
+        const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
+        totalFields += userEditableFields.length;
+
+        const populatedStepFields = userEditableFields.filter(field => {
+          const value = currentData[field.name];
+          if (Array.isArray(value)) {
+            return value.length > 0;
+          }
+          return value && value !== '' && value !== null && value !== undefined;
+        });
+
+        populatedFields += populatedStepFields.length;
+      });
+
+      // Total fields populated calculated (excluding CQS auto-populated fields)
+
+      return { total: totalFields, populated: populatedFields };
+    } catch (error) {
+      console.error('Error calculating total fields populated:', error);
+      return { total: 0, populated: 0 };
+    }
+  }, [questionnaireSteps, formData, form]);
 
   // Network status monitoring with enhanced offline handling
   useEffect(() => {
@@ -1236,6 +1275,17 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
       }, AUTO_SAVE.INTERVAL); // Auto-save every 30 seconds
 
       return () => clearTimeout(autoSaveTimer);
+    }
+  }, [formData, autoSaveEnabled, handleSaveDraft]);
+
+  // Debounced auto-save for real-time changes (saves data as user types)
+  useEffect(() => {
+    if (autoSaveEnabled && Object.keys(formData).length > 0) {
+      const debouncedSaveTimer = setTimeout(() => {
+        handleSaveDraft(true); // Silent save
+      }, AUTO_SAVE.DEBOUNCE_DELAY); // Save after 2 seconds of inactivity
+
+      return () => clearTimeout(debouncedSaveTimer);
     }
   }, [formData, autoSaveEnabled, handleSaveDraft]);
 
@@ -1756,17 +1806,25 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
     const fieldLabel = (
       <div className="modern-field-label">
-        <Space align="center">
-          {field.label}
-          {field.required && <span style={{ color: '#ef4444' }}>*</span>}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'flex-start', 
+          gap: '8px', 
+          flexWrap: 'wrap',
+          marginBottom: '4px'
+        }}>
+          <span style={{ flex: 1, minWidth: 0, lineHeight: '1.5' }}>
+            {field.label}
+          </span>
+          {field.required && <span style={{ color: '#ef4444', flexShrink: 0 }}>*</span>}
           {field.isCqsAutoPopulated && <span className="cqs-badge">CQS</span>}
           {isFieldCompleted && (
             <Tooltip title="Field completed">
-              <CheckCircleOutlined style={{ color: '#10b981', fontSize: '14px' }} />
+              <CheckCircleOutlined style={{ color: '#10b981', fontSize: '14px', flexShrink: 0 }} />
             </Tooltip>
           )}
-        </Space>
-        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
           <Button
             type="text"
             size="small"
@@ -2245,10 +2303,10 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
                 <Title level={4} style={{ margin: 0, color: '#1e293b' }}>
                   Questionnaire Steps
                 </Title>
-                <Text type="secondary" style={{ fontSize: '12px' }}>
+                <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>
                   {completedSteps.size} of {questionnaireSteps.length} steps completed
                 </Text>
-                <Text type="secondary" style={{ fontSize: '11px', display: 'block', marginTop: 2 }}>
+                <Text type="secondary" style={{ fontSize: '11px', display: 'block', marginTop: '2px' }}>
                   {(() => {
                     const fieldStats = getTotalFieldsPopulated();
                     return `${fieldStats.populated} of ${fieldStats.total} fields populated`;
@@ -2445,16 +2503,8 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
                         <div className="modern-field-header">
-                          <div style={{ flex: 1 }}>{renderField(field)}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>{renderField(field)}</div>
                           <div className="modern-field-actions">
-                            <Tooltip title="Raise Query">
-                              <button
-                                className="modern-query-button"
-                                onClick={() => handleRaiseQuery(field.name)}
-                              >
-                                <QuestionCircleOutlined />
-                              </button>
-                            </Tooltip>
                             {field.isCqsAutoPopulated && (
                               <Tooltip title="CQS Auto-populated">
                                 <div
@@ -2647,10 +2697,10 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '12px', color: '#1e293b', fontWeight: '500' }}>
+              <div style={{ fontSize: '12px', color: '#1e293b', fontWeight: '500', marginBottom: '4px' }}>
                 {completedSteps.size} of {questionnaireSteps.length} steps
               </div>
-              <div style={{ fontSize: '11px', color: '#64748b' }}>
+              <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px' }}>
                 {(() => {
                   const fieldStats = getTotalFieldsPopulated();
                   return `${fieldStats.populated}/${fieldStats.total} fields`;

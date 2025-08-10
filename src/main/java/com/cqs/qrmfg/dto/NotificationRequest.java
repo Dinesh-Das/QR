@@ -6,7 +6,7 @@ import java.util.Map;
 
 public class NotificationRequest {
     private String id;
-    private String type; // EMAIL, SLACK, SMS
+    private String type; // EMAIL, SMS
     private List<String> recipients;
     private String subject;
     private String message;
@@ -14,7 +14,7 @@ public class NotificationRequest {
     private Map<String, Object> templateData;
     private String priority; // LOW, NORMAL, HIGH, URGENT
     private LocalDateTime scheduledAt;
-    private String channel; // For Slack notifications
+    private String channel; // For notification channel specification
     private String createdBy;
     private LocalDateTime createdAt;
     

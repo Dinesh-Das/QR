@@ -1,4 +1,4 @@
-import { MailOutlined, SlackOutlined, BellOutlined, SettingOutlined } from '@ant-design/icons';
+import { MailOutlined, BellOutlined, SettingOutlined } from '@ant-design/icons';
 import {
   Card,
   Form,
@@ -9,9 +9,10 @@ import {
   Divider,
   Typography,
   Space,
-  Alert
+  Alert,
+  Input
 } from 'antd';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import apiClient from '../api/client';
 import { getCurrentUser } from '../services/auth';
@@ -36,19 +37,6 @@ const NotificationPreferences = () => {
       queryAssigned: true,
       queryOverdue: true
     },
-    slack: {
-      enabled: false,
-      userId: '',
-      workflowCreated: false,
-      workflowExtended: true,
-      workflowCompleted: true,
-      workflowStateChanged: false,
-      workflowOverdue: true,
-      queryRaised: true,
-      queryResolved: true,
-      queryAssigned: true,
-      queryOverdue: true
-    },
     general: {
       frequency: 'immediate', // immediate, daily, weekly
       quietHours: {
@@ -65,13 +53,26 @@ const NotificationPreferences = () => {
     const loadPreferencesWithAbort = async () => {
       setLoading(true);
       try {
-        const user = getCurrentUser();
-        const data = await apiClient.get(`/api/users/${user.username}/notification-preferences`, {
+        const username = getCurrentUser();
+        if (!username) {
+          console.error('No authenticated user found');
+          message.error('Please log in to view notification preferences');
+          return;
+        }
+        
+        const data = await apiClient.get(`/users/${username}/notification-preferences`, {
           signal: controller.signal
         });
         if (!controller.signal.aborted) {
+          console.log('API Response:', data);
+          console.log('Email preferences from API:', data.email);
           setPreferences(data);
+          
+          // Reset form and set new values
+          form.resetFields();
           form.setFieldsValue(data);
+          
+          console.log('Form values after setting:', form.getFieldsValue());
         }
       } catch (error) {
         if (!controller.signal.aborted) {
@@ -90,39 +91,21 @@ const NotificationPreferences = () => {
     return () => {
       controller.abort();
     };
-  }, []); // Remove loadPreferences dependency
+  }, [form]); // Add form to dependency array
 
-  const _loadPreferences = useCallback(
-    async signal => {
-      setLoading(true);
-      try {
-        const user = getCurrentUser();
-        const data = await apiClient.get(`/api/users/${user.username}/notification-preferences`, {
-          signal
-        });
-        if (!signal?.aborted) {
-          setPreferences(data);
-          form.setFieldsValue(data);
-        }
-      } catch (error) {
-        if (!signal?.aborted) {
-          console.error('Failed to load notification preferences:', error);
-          message.error('Failed to load notification preferences');
-        }
-      } finally {
-        if (!signal?.aborted) {
-          setLoading(false);
-        }
-      }
-    },
-    [form]
-  );
+
 
   const savePreferences = async values => {
     setLoading(true);
     try {
-      const user = getCurrentUser();
-      await apiClient.put(`/api/users/${user.username}/notification-preferences`, values);
+      const username = getCurrentUser();
+      if (!username) {
+        console.error('No authenticated user found');
+        message.error('Please log in to save notification preferences');
+        return;
+      }
+      
+      await apiClient.put(`/users/${username}/notification-preferences`, values);
       setPreferences(values);
       message.success('Notification preferences saved successfully');
     } catch (error) {
@@ -185,7 +168,7 @@ const NotificationPreferences = () => {
         </Text>
       </div>
 
-      <Form form={form} layout="vertical" onFinish={handleFormSubmit} initialValues={preferences}>
+      <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
         {/* Email Notifications */}
         <Card
           title={
@@ -205,27 +188,16 @@ const NotificationPreferences = () => {
             label="Email Address"
             rules={[{ type: 'email', message: 'Please enter a valid email address' }]}
           >
-            <input
+            <Input
               type="email"
-              placeholder="your.email@company.com"
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #d9d9d9',
-                borderRadius: '4px'
-              }}
+              // placeholder="your.email@company.com"
             />
           </Form.Item>
 
           <Divider orientation="left">Email Notification Types</Divider>
 
           {notificationTypes.map(type => (
-            <Form.Item
-              key={type.key}
-              name={['email', type.key]}
-              valuePropName="checked"
-              style={{ marginBottom: '8px' }}
-            >
+            <div key={type.key} style={{ marginBottom: '16px' }}>
               <div
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               >
@@ -236,75 +208,19 @@ const NotificationPreferences = () => {
                     {type.description}
                   </Text>
                 </div>
-                <Switch size="small" />
+                <Form.Item
+                  name={['email', type.key]}
+                  valuePropName="checked"
+                  style={{ margin: 0 }}
+                >
+                  <Switch size="small" />
+                </Form.Item>
               </div>
-            </Form.Item>
+            </div>
           ))}
         </Card>
 
-        {/* Slack Notifications */}
-        <Card
-          title={
-            <Space>
-              <SlackOutlined />
-              Slack Notifications
-            </Space>
-          }
-          style={{ marginBottom: '16px' }}
-        >
-          <Alert
-            message="Slack Integration"
-            description="Slack notifications require additional setup by your system administrator."
-            type="info"
-            showIcon
-            style={{ marginBottom: '16px' }}
-          />
 
-          <Form.Item name={['slack', 'enabled']} valuePropName="checked">
-            <Switch checkedChildren="Enabled" unCheckedChildren="Disabled" />
-          </Form.Item>
-
-          <Form.Item
-            name={['slack', 'userId']}
-            label="Slack User ID"
-            help="Your Slack user ID (e.g., @username or U1234567890)"
-          >
-            <input
-              type="text"
-              placeholder="@username or U1234567890"
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '1px solid #d9d9d9',
-                borderRadius: '4px'
-              }}
-            />
-          </Form.Item>
-
-          <Divider orientation="left">Slack Notification Types</Divider>
-
-          {notificationTypes.map(type => (
-            <Form.Item
-              key={type.key}
-              name={['slack', type.key]}
-              valuePropName="checked"
-              style={{ marginBottom: '8px' }}
-            >
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <div>
-                  <Text strong>{type.label}</Text>
-                  <br />
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                    {type.description}
-                  </Text>
-                </div>
-                <Switch size="small" />
-              </div>
-            </Form.Item>
-          ))}
-        </Card>
 
         {/* General Settings */}
         <Card
@@ -343,26 +259,10 @@ const NotificationPreferences = () => {
               label="Start Time"
               style={{ flex: 1 }}
             >
-              <input
-                type="time"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: '1px solid #d9d9d9',
-                  borderRadius: '4px'
-                }}
-              />
+              <Input type="time" style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name={['general', 'quietHours', 'end']} label="End Time" style={{ flex: 1 }}>
-              <input
-                type="time"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: '1px solid #d9d9d9',
-                  borderRadius: '4px'
-                }}
-              />
+              <Input type="time" style={{ width: '100%' }} />
             </Form.Item>
           </div>
         </Card>

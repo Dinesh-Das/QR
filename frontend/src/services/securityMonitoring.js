@@ -252,7 +252,6 @@ export class SecurityMonitoringService {
   sendImmediateAlert(event) {
     // In a real implementation, this would send alerts via:
     // - Email notifications
-    // - Slack/Teams webhooks
     // - SMS alerts
     // - Push notifications to security team
     

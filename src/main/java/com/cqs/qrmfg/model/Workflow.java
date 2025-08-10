@@ -249,6 +249,10 @@ public class Workflow {
     public String getAssignedPlant() {
         return plantCode; // Map to new field
     }
+    
+    public void setAssignedPlant(String assignedPlant) {
+        this.plantCode = assignedPlant; // Map to new field
+    }
 
     @Override
     public String toString() {

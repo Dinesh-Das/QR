@@ -80,6 +80,15 @@
   padding: 20px 24px;
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-bottom: 1px solid #e5e7eb;
+  line-height: 1.4;
+}
+
+.modern-steps-header .ant-typography {
+  margin-bottom: 4px !important;
+}
+
+.modern-steps-header .ant-typography:last-child {
+  margin-bottom: 0 !important;
 }
 
 .modern-steps-list {
@@ -182,6 +191,9 @@
   border: 1px solid #e5e7eb;
   transition: all 0.3s ease;
   position: relative;
+  overflow: hidden;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .modern-field-group:hover {
@@ -221,9 +233,11 @@
   font-weight: 600;
   color: #6b7280;
   margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: block;
+  line-height: 1.5;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
 }
 
 .modern-field-label .cqs-badge {
@@ -582,9 +596,15 @@
 /* Enhanced field styles */
 .modern-field-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 12px;
+  gap: 12px;
+}
+
+.modern-field-header > div:first-child {
+  flex: 1;
+  min-width: 0;
 }
 
 .modern-field-actions {
@@ -673,7 +693,7 @@
   inset: 0;
   border-radius: 50%;
   padding: 2px;
-  background: conic-gradient(from 0deg, #6366f1 0deg, #6366f1 var(--completion-angle, 0deg), #e5e7eb var(--completion-angle, 0deg), #e5e7eb 360deg);
+  background: conic-gradient(from 0deg, #6366f1 0deg, #6366f1 90deg, #e5e7eb 90deg, #e5e7eb 360deg);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: xor;
   -webkit-mask-composite: xor;
@@ -709,7 +729,7 @@
 .modern-progress-ring .progress-foreground {
   stroke: url(#progressGradient);
   stroke-dasharray: 188.5;
-  stroke-dashoffset: calc(188.5 - (188.5 * var(--progress)) / 100);
+  stroke-dashoffset: 94.25;
   transition: stroke-dashoffset 0.5s ease;
 }
 
@@ -726,6 +746,15 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   z-index: 1000;
   min-width: 200px;
+  line-height: 1.4;
+}
+
+.modern-floating-indicator > div {
+  margin-bottom: 8px;
+}
+
+.modern-floating-indicator > div:last-child {
+  margin-bottom: 0;
 }
 
 .modern-completion-badge {
@@ -1024,4 +1053,93 @@
 
 .plant-questionnaire-container .ant-typography.ant-typography-secondary {
   color: #9ca3af !important;
+}
+
+/* Fix for form field alignment and text wrapping */
+.plant-questionnaire-container .ant-form-item-label {
+  text-align: left;
+  padding-bottom: 8px;
+}
+
+.plant-questionnaire-container .ant-form-item-label > label {
+  color: #6b7280 !important;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-word;
+  display: block;
+  width: 100%;
+}
+
+.plant-questionnaire-container .ant-form-item {
+  margin-bottom: 0;
+}
+
+.plant-questionnaire-container .ant-form-item-control {
+  line-height: 1.5;
+}
+
+.plant-questionnaire-container .ant-form-item-control-input {
+  min-height: auto;
+}
+
+/* Ensure proper spacing and alignment for field labels */
+.modern-field-label .ant-space {
+  display: block !important;
+  width: 100%;
+}
+
+.modern-field-label .ant-space-item {
+  display: inline-block;
+  margin-right: 8px;
+  margin-bottom: 4px;
+}
+
+/* Fix for long question text */
+.modern-field-group .ant-form-item-label {
+  max-width: 100%;
+  overflow: visible;
+}
+
+.modern-field-group .ant-form-item-label > label {
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: initial;
+  white-space: normal;
+}
+
+/* Ensure proper container width */
+.modern-form-content .ant-row {
+  width: 100%;
+}
+
+.modern-form-content .ant-col {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* Fix for field actions alignment */
+.modern-field-actions {
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  flex-shrink: 0;
+  align-items: flex-start;
+  margin-top: 2px;
+}
+
+/* Responsive text handling */
+@media (max-width: 768px) {
+  .modern-field-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .modern-field-actions {
+    opacity: 1;
+    align-self: flex-end;
+  }
 }

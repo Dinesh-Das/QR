@@ -13,7 +13,7 @@ public class NotificationResult {
     private LocalDateTime sentAt;
     private LocalDateTime createdAt;
     private int retryCount;
-    private String externalId; // ID from external service (email provider, Slack, etc.)
+    private String externalId; // ID from external service (email provider, etc.)
     
     public NotificationResult() {
         this.createdAt = LocalDateTime.now();

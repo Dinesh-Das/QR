@@ -6,6 +6,7 @@ import { userAPI } from '../../services/userAPI';
 import { ValidationRules } from '../../utils/inputValidation';
 import SecureForm, { SecureInput, SecureFormItem } from '../SecureForm';
 
+import NotificationPreferencesPreview from './NotificationPreferencesPreview';
 import PlantAssignmentForm from './PlantAssignmentForm';
 
 /**
@@ -256,6 +257,15 @@ const UserModal = React.memo(({
           form={form}
           initialValues={plantAssignmentData}
         />
+
+        {/* Notification Preferences Preview (only for new users) */}
+        {!isEditMode && (
+          <NotificationPreferencesPreview
+            selectedRoles={selectedRoles}
+            roles={roles}
+            visible={visible}
+          />
+        )}
       </SecureForm>
     </Modal>
   );

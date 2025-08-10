@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Default Notification Preferences - Admin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .preference-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .preference-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .preference-item label {
+            font-weight: 500;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #007bff;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn-success {
+            background-color: #28a745;
+        }
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        .alert {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .alert-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .role-tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .role-tab {
+            padding: 10px 20px;
+            background: #e9ecef;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            margin-right: 5px;
+            border-radius: 4px 4px 0 0;
+        }
+        .role-tab.active {
+            background: #007bff;
+            color: white;
+        }
+        .role-content {
+            display: none;
+        }
+        .role-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Default Notification Preferences Configuration</h1>
+        <p>Configure which notification types are enabled by default when new users are created.</p>
+        
+        <div id="alertContainer"></div>
+        
+        <!-- General Defaults Section -->
+        <div class="section">
+            <h3>General Default Preferences</h3>
+            <p>These preferences apply to all new users unless overridden by role-specific settings.</p>
+            <div class="preference-grid" id="generalPreferences">
+                <!-- Will be populated by JavaScript -->
+            </div>
+            <button class="btn btn-success" onclick="saveGeneralDefaults()">Save General Defaults</button>
+        </div>
+        
+        <!-- Role-based Defaults Section -->
+        <div class="section">
+            <h3>Role-based Default Preferences</h3>
+            <p>Configure different default preferences for each role. These override general defaults.</p>
+            
+            <div class="role-tabs">
+                <div class="role-tab active" onclick="showRoleTab('CQS')">CQS Users</div>
+                <div class="role-tab" onclick="showRoleTab('JVC')">JVC Users</div>
+                <div class="role-tab" onclick="showRoleTab('PLANT')">Plant Users</div>
+                <div class="role-tab" onclick="showRoleTab('TECH')">Tech Users</div>
+            </div>
+            
+            <div id="CQS" class="role-content active">
+                <h4>CQS Role Default Preferences</h4>
+                <div class="preference-grid" id="cqsPreferences">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+                <button class="btn btn-success" onclick="saveRoleDefaults('CQS')">Save CQS Defaults</button>
+            </div>
+            
+            <div id="JVC" class="role-content">
+                <h4>JVC Role Default Preferences</h4>
+                <div class="preference-grid" id="jvcPreferences">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+                <button class="btn btn-success" onclick="saveRoleDefaults('JVC')">Save JVC Defaults</button>
+            </div>
+            
+            <div id="PLANT" class="role-content">
+                <h4>Plant Role Default Preferences</h4>
+                <div class="preference-grid" id="plantPreferences">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+                <button class="btn btn-success" onclick="saveRoleDefaults('PLANT')">Save Plant Defaults</button>
+            </div>
+            
+            <div id="TECH" class="role-content">
+                <h4>Tech Role Default Preferences</h4>
+                <div class="preference-grid" id="techPreferences">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+                <button class="btn btn-success" onclick="saveRoleDefaults('TECH')">Save Tech Defaults</button>
+            </div>
+        </div>
+        
+        <!-- Actions Section -->
+        <div class="section">
+            <h3>Actions</h3>
+            <button class="btn" onclick="loadCurrentConfig()">Reload Configuration</button>
+            <button class="btn" onclick="previewDefaults()">Preview Defaults</button>
+        </div>
+    </div>
+
+    <script>
+        let currentConfig = {};
+        
+        // Load configuration on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCurrentConfig();
+        });
+        
+        function showAlert(message, type = 'success') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+            alertContainer.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+            setTimeout(() => {
+                alertContainer.innerHTML = '';
+            }, 5000);
+        }
+        
+        function showRoleTab(role) {
+            // Hide all role contents
+            document.querySelectorAll('.role-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.role-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected role content
+            document.getElementById(role).classList.add('active');
+            
+            // Add active class to selected tab
+            event.target.classList.add('active');
+        }
+        
+        function loadCurrentConfig() {
+            fetch('/qrmfg/admin/notification-defaults/config')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentConfig = data;
+                        populatePreferences();
+                        showAlert('Configuration loaded successfully');
+                    } else {
+                        showAlert('Failed to load configuration: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showAlert('Error loading configuration: ' + error.message, 'error');
+                });
+        }
+        
+        function populatePreferences() {
+            // Populate general preferences
+            populatePreferenceGrid('generalPreferences', currentConfig.generalDefaults || {});
+            
+            // Populate role-based preferences
+            const roleBasedDefaults = currentConfig.roleBasedDefaults || {};
+            populatePreferenceGrid('cqsPreferences', roleBasedDefaults.CQS || {});
+            populatePreferenceGrid('jvcPreferences', roleBasedDefaults.JVC || {});
+            populatePreferenceGrid('plantPreferences', roleBasedDefaults.PLANT || {});
+            populatePreferenceGrid('techPreferences', roleBasedDefaults.TECH || {});
+        }
+        
+        function populatePreferenceGrid(containerId, preferences) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            const notificationTypes = [
+                'WORKFLOW_CREATED', 'WORKFLOW_COMPLETED', 'WORKFLOW_STATE_CHANGED',
+                'WORKFLOW_OVERDUE', 'QUERY_RAISED', 'QUERY_RESOLVED',
+                'QUERY_ASSIGNED', 'QUERY_OVERDUE'
+            ];
+            
+            notificationTypes.forEach(type => {
+                const isEnabled = preferences[type] || false;
+                const item = document.createElement('div');
+                item.className = 'preference-item';
+                item.innerHTML = `
+                    <label>${formatNotificationType(type)}</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" ${isEnabled ? 'checked' : ''} data-type="${type}">
+                        <span class="slider"></span>
+                    </label>
+                `;
+                container.appendChild(item);
+            });
+        }
+        
+        function formatNotificationType(type) {
+            return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+        }
+        
+        function saveGeneralDefaults() {
+            const preferences = {};
+            document.querySelectorAll('#generalPreferences input[type="checkbox"]').forEach(checkbox => {
+                preferences[checkbox.dataset.type] = checkbox.checked;
+            });
+            
+            fetch('/qrmfg/admin/notification-defaults/update-general-defaults', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(preferences)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('General defaults saved successfully');
+                } else {
+                    showAlert('Failed to save general defaults: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('Error saving general defaults: ' + error.message, 'error');
+            });
+        }
+        
+        function saveRoleDefaults(role) {
+            const preferences = {};
+            document.querySelectorAll(`#${role.toLowerCase()}Preferences input[type="checkbox"]`).forEach(checkbox => {
+                preferences[checkbox.dataset.type] = checkbox.checked;
+            });
+            
+            fetch(`/qrmfg/admin/notification-defaults/update-role-defaults?role=${role}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(preferences)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert(`${role} role defaults saved successfully`);
+                } else {
+                    showAlert(`Failed to save ${role} defaults: ` + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert(`Error saving ${role} defaults: ` + error.message, 'error');
+            });
+        }
+        
+        function previewDefaults() {
+            const role = prompt('Enter role to preview (CQS, JVC, PLANT, TECH):');
+            if (role) {
+                fetch(`/qrmfg/admin/notification-defaults/preview?role=${role}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            let message = `Preview for ${role} role:\n\n`;
+                            Object.entries(data.defaultPreferences).forEach(([type, enabled]) => {
+                                message += `${formatNotificationType(type)}: ${enabled ? 'Enabled' : 'Disabled'}\n`;
+                            });
+                            alert(message);
+                        } else {
+                            showAlert('Failed to preview defaults: ' + data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showAlert('Error previewing defaults: ' + error.message, 'error');
+                    });
+            }
+        }
+    </script>
+</body>
+</html>

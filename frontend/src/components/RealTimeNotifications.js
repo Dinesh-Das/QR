@@ -341,7 +341,7 @@ const RealTimeNotifications = () => {
           onClick={() => {
             setVisible(false);
             // Navigate to notification settings
-            window.location.href = '/qrmfg/settings/notifications';
+            window.location.href = '/qrmfg/settings#notifications';
           }}
         >
           Notification Settings
