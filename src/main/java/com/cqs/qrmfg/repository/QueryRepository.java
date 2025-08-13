@@ -165,4 +165,11 @@ public interface QueryRepository extends JpaRepository<Query, Long> {
     
     @org.springframework.data.jpa.repository.Query("SELECT q FROM Query q JOIN FETCH q.workflow WHERE q.id = :id")
     java.util.Optional<Query> findByIdWithWorkflow(@Param("id") Long id);
+    
+    // Role-based query history methods
+    @org.springframework.data.jpa.repository.Query("SELECT q FROM Query q JOIN FETCH q.workflow WHERE q.workflow.id = :workflowId AND q.assignedTeam = :team AND q.status = :status ORDER BY q.resolvedAt DESC")
+    List<Query> findByWorkflow_IdAndAssignedTeamAndStatus(@Param("workflowId") Long workflowId, @Param("team") QueryTeam team, @Param("status") QueryStatus status);
+    
+    @org.springframework.data.jpa.repository.Query("SELECT q FROM Query q JOIN FETCH q.workflow WHERE q.workflow.materialCode = :materialCode AND q.assignedTeam = :team AND q.status = :status ORDER BY q.resolvedAt DESC")
+    List<Query> findByWorkflow_MaterialCodeAndAssignedTeamAndStatus(@Param("materialCode") String materialCode, @Param("team") QueryTeam team, @Param("status") QueryStatus status);
 }

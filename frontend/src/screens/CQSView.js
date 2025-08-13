@@ -13,7 +13,6 @@ import apiClient from '../api/client';
 import QueryHistoryTracker from '../components/QueryHistoryTracker';
 import QueryInbox from '../components/QueryInbox';
 import { CqsOnly } from '../components/RoleBasedComponent';
-import WorkflowDashboard from '../components/WorkflowDashboard';
 import { TEAM_NAMES } from '../constants';
 import { useRoleBasedAccess } from '../hooks/useRoleBasedAccess';
 
@@ -194,17 +193,7 @@ const CQSView = () => {
         >
           <QueryInbox team="CQS" userRole="CQS_USER" />
         </TabPane>
-        <TabPane
-          tab={
-            <Space>
-              <ClockCircleOutlined />
-              <span>Workflow Dashboard</span>
-            </Space>
-          }
-          key="dashboard"
-        >
-          <WorkflowDashboard userRole="CQS_USER" />
-        </TabPane>
+
         <TabPane
           tab={
             <Space>

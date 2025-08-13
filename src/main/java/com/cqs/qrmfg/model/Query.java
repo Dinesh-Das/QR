@@ -30,6 +30,12 @@ public class Query {
     @Column(name = "field_name", length = 100)
     private String fieldName;
 
+    @Column(name = "step_title", length = 200)
+    private String stepTitle;
+
+    @Column(name = "original_question", length = 2000)
+    private String originalQuestion;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "assigned_team", nullable = false, length = 20)
     private QueryTeam assignedTeam;
@@ -91,6 +97,18 @@ public class Query {
         this(workflow, question, assignedTeam, raisedBy);
         this.stepNumber = stepNumber;
         this.fieldName = fieldName;
+    }
+
+    public Query(Workflow workflow, String question, Integer stepNumber, String fieldName, 
+                 String stepTitle, QueryTeam assignedTeam, String raisedBy) {
+        this(workflow, question, stepNumber, fieldName, assignedTeam, raisedBy);
+        this.stepTitle = stepTitle;
+    }
+
+    public Query(Workflow workflow, String question, Integer stepNumber, String fieldName, 
+                 String stepTitle, String originalQuestion, QueryTeam assignedTeam, String raisedBy) {
+        this(workflow, question, stepNumber, fieldName, stepTitle, assignedTeam, raisedBy);
+        this.originalQuestion = originalQuestion;
     }
 
     @PrePersist
@@ -194,6 +212,12 @@ public class Query {
 
     public String getFieldName() { return fieldName; }
     public void setFieldName(String fieldName) { this.fieldName = fieldName; }
+
+    public String getStepTitle() { return stepTitle; }
+    public void setStepTitle(String stepTitle) { this.stepTitle = stepTitle; }
+
+    public String getOriginalQuestion() { return originalQuestion; }
+    public void setOriginalQuestion(String originalQuestion) { this.originalQuestion = originalQuestion; }
 
     public QueryTeam getAssignedTeam() { return assignedTeam; }
     public void setAssignedTeam(QueryTeam assignedTeam) { this.assignedTeam = assignedTeam; }

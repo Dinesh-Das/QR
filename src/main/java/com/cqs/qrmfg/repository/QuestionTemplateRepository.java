@@ -51,4 +51,6 @@ public interface QuestionTemplateRepository extends JpaRepository<QuestionTempla
     
     @Query("SELECT MAX(qt.orderIndex) FROM QuestionTemplate qt WHERE qt.isActive = true")
     Integer findMaxOrderIndex();
+    
+    Optional<QuestionTemplate> findByFieldNameAndIsActiveTrue(String fieldName);
 }

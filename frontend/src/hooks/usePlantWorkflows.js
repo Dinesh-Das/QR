@@ -111,7 +111,7 @@ export const usePlantWorkflows = (currentPlant, userPlantData) => {
               submittedBy: workflow.submittedBy,
               isSubmitted: workflow.isSubmitted,
               isCompleted: workflow.isCompleted,
-              openQueries: 0, // TODO: Add query count from backend
+              openQueries: workflow.openQueries || 0,
               assignedPlant: workflow.plantCode,
               materialName: workflow.materialName,
               itemDescription: workflow.itemDescription

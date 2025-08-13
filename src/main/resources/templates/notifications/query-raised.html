@@ -182,14 +182,25 @@
                             <span class="priority-badge" th:text="${query.priorityLevel}">NORMAL</span>
                         </span>
                     </div>
-                    <div class="info-item">
+                    <div class="info-item" th:if="${query.fieldName}">
                         <span class="info-label">Field Context</span>
                         <span class="info-value" th:text="${query.fieldName}">Material Properties</span>
                     </div>
+                    <div class="info-item" th:if="${query.stepNumber}">
+                        <span class="info-label">Questionnaire Step</span>
+                        <span class="info-value">
+                            <span th:text="'Step ' + ${query.stepNumber}">Step 1</span>
+                            <span th:if="${query.stepTitle}" th:text="': ' + ${query.stepTitle}">: Material Information</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="question-box" th:if="${query.originalQuestion}">
+                    <strong>Original Questionnaire Question:</strong>
+                    <div class="question-text" th:text="${query.originalQuestion}" style="color: #52c41a; margin-bottom: 12px;">What is the flash point of this material?</div>
                 </div>
                 <div class="question-box">
-                    <strong>Question:</strong>
-                    <div class="question-text" th:text="${query.question}">What is the flash point of this material?</div>
+                    <strong>Query Raised:</strong>
+                    <div class="question-text" th:text="${query.question}">I need clarification on the flash point measurement method.</div>
                 </div>
             </div>
             

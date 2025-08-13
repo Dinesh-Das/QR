@@ -21,6 +21,7 @@ import {
 import React, { useState, useEffect, useCallback } from 'react';
 
 import apiClient from '../api/client';
+import { getUserRole } from '../services/auth';
 
 
 const { Text } = Typography;
@@ -40,30 +41,73 @@ const QueryHistoryTracker = ({ queryId, materialCode, workflowId, compact = fals
     try {
       setLoading(true);
 
+      // Get current user's role to filter queries
+      const userRole = getUserRole();
+      console.log('QueryHistoryTracker - userRole:', userRole);
+      
       let endpoint = '/queries';
+      
+      // If specific query/workflow/material is requested, use those endpoints
       if (queryId) {
         endpoint += `/${queryId}/history`;
       } else if (workflowId) {
         endpoint += `/workflow/${workflowId}`;
       } else if (materialCode) {
         endpoint += `/material/${materialCode}`;
+      } else {
+        // Default: Get all resolved queries for the user's team
+        if (userRole) {
+          // Map user role to team name for the endpoint
+          const teamMap = {
+            'CQS_USER': 'CQS',
+            'TECH_USER': 'TECH', 
+            'JVC_USER': 'JVC'
+          };
+          const team = teamMap[userRole];
+          console.log('QueryHistoryTracker - mapped team:', team);
+          if (team) {
+            endpoint += `/resolved/${team}`;
+          } else {
+            console.warn('QueryHistoryTracker - unknown role, using CQS fallback');
+            endpoint += `/resolved/CQS`; // fallback
+          }
+        } else {
+          endpoint += `/resolved/CQS`; // fallback if no role
+        }
       }
 
+      console.log('QueryHistoryTracker - endpoint:', endpoint);
+      
       const data = await apiClient.get(endpoint);
-      setHistory(Array.isArray(data) ? data : [data]);
+      
+      console.log('QueryHistoryTracker - received data:', data);
+      console.log('QueryHistoryTracker - data type:', typeof data);
+      console.log('QueryHistoryTracker - is array:', Array.isArray(data));
+      console.log('QueryHistoryTracker - data length:', data?.length);
+      
+      const historyData = Array.isArray(data) ? data : (data ? [data] : []);
+      console.log('QueryHistoryTracker - setting history:', historyData);
+      setHistory(historyData);
 
       // Calculate stats
-      const resolved = data.filter(q => q.status === 'RESOLVED');
+      const dataArray = Array.isArray(data) ? data : (data ? [data] : []);
+      const resolved = dataArray.filter(q => q.status === 'RESOLVED');
       const avgTime =
         resolved.length > 0
           ? resolved.reduce((sum, q) => sum + (q.daysOpen || 0), 0) / resolved.length
           : 0;
 
+      console.log('QueryHistoryTracker - stats calculation:', {
+        dataArray: dataArray.length,
+        resolved: resolved.length,
+        avgTime
+      });
+
       setStats({
-        totalQueries: data.length,
+        totalQueries: dataArray.length,
         resolvedQueries: resolved.length,
         avgResolutionTime: avgTime,
-        currentSLA: data.filter(q => q.daysOpen > 3).length
+        currentSLA: dataArray.filter(q => q.daysOpen > 3).length
       });
     } catch (error) {
       console.error('Failed to load query history:', error);
@@ -73,9 +117,8 @@ const QueryHistoryTracker = ({ queryId, materialCode, workflowId, compact = fals
   }, [queryId, materialCode, workflowId]);
 
   useEffect(() => {
-    if (queryId || materialCode || workflowId) {
-      loadQueryHistory();
-    }
+    // Always load query history - either for specific context or all resolved queries for the team
+    loadQueryHistory();
   }, [queryId, materialCode, workflowId, loadQueryHistory]);
 
   const getStatusColor = status => {
@@ -192,7 +235,12 @@ const QueryHistoryTracker = ({ queryId, materialCode, workflowId, compact = fals
         title={
           <Space>
             <HistoryOutlined />
-            <span>Query History</span>
+            <span>
+              {queryId ? 'Query History' : 
+               workflowId ? 'Workflow Queries' :
+               materialCode ? 'Material Queries' :
+               'Team History'}
+            </span>
           </Space>
         }
         style={{ marginBottom: 16 }}
@@ -235,7 +283,12 @@ const QueryHistoryTracker = ({ queryId, materialCode, workflowId, compact = fals
       title={
         <Space>
           <HistoryOutlined />
-          <span>Query History & Resolution Tracking</span>
+          <span>
+            {queryId ? 'Query History' : 
+             workflowId ? 'Workflow Query History' :
+             materialCode ? 'Material Query History' :
+             'Team Resolved Queries'}
+          </span>
         </Space>
       }
       size="small"

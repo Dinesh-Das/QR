@@ -46,7 +46,9 @@ const QueryRaisingModal = ({ open, visible, onCancel, onSubmit, workflowId, fiel
         priorityLevel: values.priority || 'MEDIUM',
         fieldName: fieldContext?.name,
         stepNumber: fieldContext?.stepNumber,
-        queryCategory: 'GENERAL' // Default category
+        stepTitle: fieldContext?.stepTitle,
+        // originalQuestion will be fetched automatically from the template based on fieldName
+        queryCategory: values.category || 'GENERAL'
       };
 
       const createdQuery = await queryAPI.createQuery(workflowId, queryData);
@@ -396,6 +398,28 @@ const QueryRaisingModal = ({ open, visible, onCancel, onSubmit, workflowId, fiel
             fieldName="fieldContext"
           />
         </SecureFormItem>
+
+        {/* Query Category */}
+        <Form.Item
+          name="category"
+          label="Query Category"
+          help="Categorize your query for better tracking and resolution"
+        >
+          <Select
+            placeholder="Select query category"
+            size="large"
+            allowClear
+          >
+            <Option value="GENERAL">General Question</Option>
+            <Option value="TECHNICAL">Technical Specification</Option>
+            <Option value="SAFETY">Safety & Compliance</Option>
+            <Option value="REGULATORY">Regulatory Information</Option>
+            <Option value="ENVIRONMENTAL">Environmental Impact</Option>
+            <Option value="TRANSPORTATION">Transportation & Storage</Option>
+            <Option value="SUPPLIER">Supplier Information</Option>
+            <Option value="CLARIFICATION">Clarification Request</Option>
+          </Select>
+        </Form.Item>
 
         {/* Priority Selection */}
         <Form.Item

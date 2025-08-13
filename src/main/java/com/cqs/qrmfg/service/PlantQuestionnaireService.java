@@ -28,6 +28,9 @@ public class PlantQuestionnaireService {
     private PlantSpecificDataRepository plantSpecificDataRepository;
     
     @Autowired
+    private WorkflowRepository workflowRepository;
+    
+    @Autowired
     private ObjectMapper objectMapper;
 
     @Transactional
@@ -533,27 +536,57 @@ public class PlantQuestionnaireService {
         try {
             Map<String, Object> dashboardData = new HashMap<>();
             
-            // Get all plant-specific data for this plant
-            List<PlantSpecificData> plantDataList = plantSpecificDataRepository.findByPlantCode(plantCode);
+            // Get all workflows for this plant (with queries loaded)
+            List<Workflow> workflows = workflowRepository.findByPlantCodeWithQueries(plantCode);
             
             // Convert to dashboard format with progress information
-            List<Map<String, Object>> workflowsWithProgress = plantDataList.stream()
-                .map(plantData -> {
+            List<Map<String, Object>> workflowsWithProgress = workflows.stream()
+                .map(workflow -> {
                     Map<String, Object> workflowInfo = new HashMap<>();
-                    workflowInfo.put("materialCode", plantData.getMaterialCode());
-                    workflowInfo.put("plantCode", plantData.getPlantCode());
-                    workflowInfo.put("workflowId", plantData.getWorkflowId());
-                    workflowInfo.put("completionStatus", plantData.getCompletionStatus());
-                    workflowInfo.put("completionPercentage", plantData.getCompletionPercentage());
-                    workflowInfo.put("totalFields", plantData.getTotalFields());
-                    workflowInfo.put("completedFields", plantData.getCompletedFields());
-                    workflowInfo.put("requiredFields", plantData.getRequiredFields());
-                    workflowInfo.put("completedRequiredFields", plantData.getCompletedRequiredFields());
-                    workflowInfo.put("lastModified", plantData.getUpdatedAt());
-                    workflowInfo.put("submittedAt", plantData.getSubmittedAt());
-                    workflowInfo.put("submittedBy", plantData.getSubmittedBy());
-                    workflowInfo.put("isSubmitted", plantData.isSubmitted());
-                    workflowInfo.put("isCompleted", plantData.isCompleted());
+                    workflowInfo.put("materialCode", workflow.getMaterialCode());
+                    workflowInfo.put("plantCode", workflow.getPlantCode());
+                    workflowInfo.put("workflowId", workflow.getId());
+                    
+                    // Get plant-specific data if available
+                    PlantSpecificData plantData = null;
+                    try {
+                        PlantSpecificDataId id = new PlantSpecificDataId(plantCode, workflow.getMaterialCode());
+                        plantData = plantSpecificDataRepository.findById(id).orElse(null);
+                    } catch (Exception e) {
+                        // Plant data not available, use workflow defaults
+                    }
+                    
+                    if (plantData != null) {
+                        workflowInfo.put("completionStatus", plantData.getCompletionStatus());
+                        workflowInfo.put("completionPercentage", plantData.getCompletionPercentage());
+                        workflowInfo.put("totalFields", plantData.getTotalFields());
+                        workflowInfo.put("completedFields", plantData.getCompletedFields());
+                        workflowInfo.put("requiredFields", plantData.getRequiredFields());
+                        workflowInfo.put("completedRequiredFields", plantData.getCompletedRequiredFields());
+                        workflowInfo.put("lastModified", plantData.getUpdatedAt());
+                        workflowInfo.put("submittedAt", plantData.getSubmittedAt());
+                        workflowInfo.put("submittedBy", plantData.getSubmittedBy());
+                        workflowInfo.put("isSubmitted", plantData.isSubmitted());
+                        workflowInfo.put("isCompleted", plantData.isCompleted());
+                    } else {
+                        // Use workflow defaults when plant data is not available
+                        workflowInfo.put("completionStatus", workflow.getState().toString());
+                        workflowInfo.put("completionPercentage", 0);
+                        workflowInfo.put("totalFields", 0);
+                        workflowInfo.put("completedFields", 0);
+                        workflowInfo.put("requiredFields", 0);
+                        workflowInfo.put("completedRequiredFields", 0);
+                        workflowInfo.put("lastModified", workflow.getLastModified());
+                        workflowInfo.put("submittedAt", null);
+                        workflowInfo.put("submittedBy", null);
+                        workflowInfo.put("isSubmitted", false);
+                        workflowInfo.put("isCompleted", workflow.getState() == WorkflowState.COMPLETED);
+                    }
+                    
+                    // Add open queries count from workflow
+                    workflowInfo.put("openQueries", workflow.getOpenQueriesCount());
+                    workflowInfo.put("totalQueries", workflow.getTotalQueriesCount());
+                    
                     return workflowInfo;
                 })
                 .collect(Collectors.toList());

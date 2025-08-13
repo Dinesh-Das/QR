@@ -33,13 +33,27 @@ public class QueryMapper {
             assignedPlant = "N/A";
         }
 
+        // Safely extract workflow ID
+        Long workflowId = null;
+        try {
+            if (query.getWorkflow() != null) {
+                workflowId = query.getWorkflow().getId();
+            }
+        } catch (org.hibernate.LazyInitializationException e) {
+            // Handle lazy loading exception gracefully
+            workflowId = null;
+        }
+
         return new QuerySummaryDto(
             query.getId(),
+            workflowId,
             materialCode,
             materialName,
             assignedPlant,
             query.getStepNumber(),
             query.getFieldName(),
+            query.getStepTitle(),
+            query.getOriginalQuestion(),
             query.getQuestion(),
             query.getResponse(),
             query.getAssignedTeam(),

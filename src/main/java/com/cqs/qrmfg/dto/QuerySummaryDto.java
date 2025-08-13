@@ -10,11 +10,14 @@ import java.time.LocalDateTime;
  */
 public class QuerySummaryDto {
     private Long id;
+    private Long workflowId;
     private String materialCode;
     private String materialName;
     private String assignedPlant;
     private Integer stepNumber;
     private String fieldName;
+    private String stepTitle;
+    private String originalQuestion;
     private String question;
     private String response;
     private QueryTeam assignedTeam;
@@ -31,17 +34,20 @@ public class QuerySummaryDto {
     // Constructors
     public QuerySummaryDto() {}
 
-    public QuerySummaryDto(Long id, String materialCode, String materialName, String assignedPlant,
-                          Integer stepNumber, String fieldName, String question, String response,
-                          QueryTeam assignedTeam, QueryStatus status, String raisedBy, String resolvedBy,
-                          String priorityLevel, LocalDateTime createdAt, LocalDateTime resolvedAt,
-                          int daysOpen, boolean overdue, boolean highPriority) {
+    public QuerySummaryDto(Long id, Long workflowId, String materialCode, String materialName, String assignedPlant,
+                          Integer stepNumber, String fieldName, String stepTitle, String originalQuestion, 
+                          String question, String response, QueryTeam assignedTeam, QueryStatus status, 
+                          String raisedBy, String resolvedBy, String priorityLevel, LocalDateTime createdAt, 
+                          LocalDateTime resolvedAt, int daysOpen, boolean overdue, boolean highPriority) {
         this.id = id;
+        this.workflowId = workflowId;
         this.materialCode = materialCode;
         this.materialName = materialName;
         this.assignedPlant = assignedPlant;
         this.stepNumber = stepNumber;
         this.fieldName = fieldName;
+        this.stepTitle = stepTitle;
+        this.originalQuestion = originalQuestion;
         this.question = question;
         this.response = response;
         this.assignedTeam = assignedTeam;
@@ -63,6 +69,14 @@ public class QuerySummaryDto {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getWorkflowId() {
+        return workflowId;
+    }
+
+    public void setWorkflowId(Long workflowId) {
+        this.workflowId = workflowId;
     }
 
     public String getMaterialCode() {
@@ -103,6 +117,22 @@ public class QuerySummaryDto {
 
     public void setFieldName(String fieldName) {
         this.fieldName = fieldName;
+    }
+
+    public String getStepTitle() {
+        return stepTitle;
+    }
+
+    public void setStepTitle(String stepTitle) {
+        this.stepTitle = stepTitle;
+    }
+
+    public String getOriginalQuestion() {
+        return originalQuestion;
+    }
+
+    public void setOriginalQuestion(String originalQuestion) {
+        this.originalQuestion = originalQuestion;
     }
 
     public String getQuestion() {

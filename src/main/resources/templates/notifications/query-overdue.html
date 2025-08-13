@@ -204,9 +204,16 @@
                         <span class="info-label">Step</span>
                         <span class="info-value" th:text="${query.stepNumber ?: 'N/A'}">3</span>
                     </div>
-                    <div class="info-item">
-                        <span class="info-label">Field</span>
-                        <span class="info-value" th:text="${query.fieldName ?: 'N/A'}">Chemical Composition</span>
+                    <div class="info-item" th:if="${query.fieldName}">
+                        <span class="info-label">Field Context</span>
+                        <span class="info-value" th:text="${query.fieldName}">Chemical Composition</span>
+                    </div>
+                    <div class="info-item" th:if="${query.stepNumber}">
+                        <span class="info-label">Questionnaire Step</span>
+                        <span class="info-value">
+                            <span th:text="'Step ' + ${query.stepNumber}">Step 1</span>
+                            <span th:if="${query.stepTitle}" th:text="': ' + ${query.stepTitle}">: Material Information</span>
+                        </span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Raised By</span>

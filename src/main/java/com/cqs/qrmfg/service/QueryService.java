@@ -21,9 +21,17 @@ public interface QueryService {
     Query createQuery(Long workflowId, String question, QueryTeam assignedTeam, String raisedBy);
     Query createQuery(Long workflowId, String question, Integer stepNumber, String fieldName, 
                      QueryTeam assignedTeam, String raisedBy);
+    Query createQuery(Long workflowId, String question, Integer stepNumber, String fieldName, 
+                     String stepTitle, QueryTeam assignedTeam, String raisedBy);
+    Query createQuery(Long workflowId, String question, Integer stepNumber, String fieldName, 
+                     String stepTitle, String originalQuestion, QueryTeam assignedTeam, String raisedBy);
     Query createQuery(String materialCode, String question, QueryTeam assignedTeam, String raisedBy);
     Query createQuery(String materialCode, String question, Integer stepNumber, String fieldName, 
                      QueryTeam assignedTeam, String raisedBy);
+    Query createQuery(String materialCode, String question, Integer stepNumber, String fieldName, 
+                     String stepTitle, QueryTeam assignedTeam, String raisedBy);
+    Query createQuery(String materialCode, String question, Integer stepNumber, String fieldName, 
+                     String stepTitle, String originalQuestion, QueryTeam assignedTeam, String raisedBy);
     
     // Query resolution
     Query resolveQuery(Long queryId, String response, String resolvedBy);
@@ -87,4 +95,8 @@ public interface QueryService {
     void handleWorkflowStateChange(Long workflowId, String previousState, String newState);
     boolean hasWorkflowOpenQueries(Long workflowId);
     List<Query> searchQueriesWithContext(String materialCode, String projectCode, String plantCode, String team, String status, String priority, int minDaysOpen);
+    
+    // Role-based query history
+    List<Query> findWorkflowQueriesResolvedByRole(Long workflowId, String role);
+    List<Query> findMaterialQueriesResolvedByRole(String materialCode, String role);
 }

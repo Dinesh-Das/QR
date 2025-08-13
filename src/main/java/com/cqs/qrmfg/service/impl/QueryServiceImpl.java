@@ -6,11 +6,13 @@ import com.cqs.qrmfg.exception.QueryNotFoundException;
 import com.cqs.qrmfg.exception.WorkflowNotFoundException;
 import com.cqs.qrmfg.model.Workflow;
 import com.cqs.qrmfg.model.Query;
+import com.cqs.qrmfg.model.QuestionTemplate;
 import com.cqs.qrmfg.model.QueryStatus;
 import com.cqs.qrmfg.model.QueryTeam;
 import com.cqs.qrmfg.model.WorkflowState;
 import com.cqs.qrmfg.repository.WorkflowRepository;
 import com.cqs.qrmfg.repository.QueryRepository;
+import com.cqs.qrmfg.repository.QuestionTemplateRepository;
 import com.cqs.qrmfg.service.NotificationService;
 import com.cqs.qrmfg.service.QueryService;
 import com.cqs.qrmfg.service.WorkflowService;
@@ -36,6 +38,9 @@ public class QueryServiceImpl implements QueryService {
     
     @Autowired
     private WorkflowRepository workflowRepository;
+    
+    @Autowired
+    private QuestionTemplateRepository questionTemplateRepository;
     
     @Autowired
     private WorkflowService workflowService;
@@ -101,12 +106,29 @@ public class QueryServiceImpl implements QueryService {
     @Override
     public Query createQuery(Long workflowId, String question, Integer stepNumber, String fieldName,
                            QueryTeam assignedTeam, String raisedBy) {
+        return createQuery(workflowId, question, stepNumber, fieldName, null, assignedTeam, raisedBy);
+    }
+    
+    @Override
+    public Query createQuery(Long workflowId, String question, Integer stepNumber, String fieldName,
+                           String stepTitle, QueryTeam assignedTeam, String raisedBy) {
+        return createQuery(workflowId, question, stepNumber, fieldName, stepTitle, null, assignedTeam, raisedBy);
+    }
+    
+    @Override
+    public Query createQuery(Long workflowId, String question, Integer stepNumber, String fieldName,
+                           String stepTitle, String originalQuestion, QueryTeam assignedTeam, String raisedBy) {
         Workflow workflow = workflowRepository.findById(workflowId)
             .orElseThrow(() -> new WorkflowNotFoundException(workflowId));
         
         validateQueryCreation(workflowId, assignedTeam);
         
-        Query query = new Query(workflow, question, stepNumber, fieldName, assignedTeam, raisedBy);
+        // If originalQuestion is not provided, try to fetch it from the question template
+        if (originalQuestion == null && fieldName != null) {
+            originalQuestion = getOriginalQuestionFromTemplate(fieldName);
+        }
+        
+        Query query = new Query(workflow, question, stepNumber, fieldName, stepTitle, originalQuestion, assignedTeam, raisedBy);
         
         logger.info("Creating query for workflow {} assigned to {} by user: {}", 
                    workflow.getMaterialCode(), assignedTeam, raisedBy);
@@ -145,10 +167,22 @@ public class QueryServiceImpl implements QueryService {
     @Override
     public Query createQuery(String materialCode, String question, Integer stepNumber, String fieldName,
                            QueryTeam assignedTeam, String raisedBy) {
+        return createQuery(materialCode, question, stepNumber, fieldName, null, assignedTeam, raisedBy);
+    }
+    
+    @Override
+    public Query createQuery(String materialCode, String question, Integer stepNumber, String fieldName,
+                           String stepTitle, QueryTeam assignedTeam, String raisedBy) {
+        return createQuery(materialCode, question, stepNumber, fieldName, stepTitle, null, assignedTeam, raisedBy);
+    }
+    
+    @Override
+    public Query createQuery(String materialCode, String question, Integer stepNumber, String fieldName,
+                           String stepTitle, String originalQuestion, QueryTeam assignedTeam, String raisedBy) {
         Workflow workflow = workflowRepository.findByMaterialCode(materialCode)
             .stream().findFirst().orElseThrow(() -> WorkflowNotFoundException.forMaterialCode(materialCode));
         
-        return createQuery(workflow.getId(), question, stepNumber, fieldName, assignedTeam, raisedBy);
+        return createQuery(workflow.getId(), question, stepNumber, fieldName, stepTitle, originalQuestion, assignedTeam, raisedBy);
     }
     
     // Query resolution
@@ -485,6 +519,79 @@ public class QueryServiceImpl implements QueryService {
         
         logger.debug("Query creation validation passed for workflow {} in state {}", 
                     workflowId, workflow.getState());
+    }
+    
+    /**
+     * Helper method to get the original question from the question template
+     */
+    private String getOriginalQuestionFromTemplate(String fieldName) {
+        try {
+            Optional<QuestionTemplate> templateOpt = questionTemplateRepository.findByFieldNameAndIsActiveTrue(fieldName);
+            if (templateOpt.isPresent()) {
+                QuestionTemplate template = templateOpt.get();
+                // Return the comments field as the original question
+                String originalQuestion = template.getComments();
+                if (originalQuestion != null && !originalQuestion.trim().isEmpty()) {
+                    logger.debug("Found original question for field {}: {}", fieldName, originalQuestion);
+                    return originalQuestion;
+                } else {
+                    // Fallback to question text if comments is empty
+                    logger.debug("Comments empty for field {}, using question text", fieldName);
+                    return template.getQuestionText();
+                }
+            } else {
+                logger.debug("No template found for field name: {}", fieldName);
+                return null;
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to fetch original question for field {}: {}", fieldName, e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Helper method to map user role to query team
+     */
+    private QueryTeam mapRoleToQueryTeam(String role) {
+        switch (role.toUpperCase()) {
+            case "CQS_USER":
+            case "CQS":
+                return QueryTeam.CQS;
+            case "TECH_USER":
+            case "TECH":
+                return QueryTeam.TECH;
+            case "JVC_USER":
+            case "JVC":
+                return QueryTeam.JVC;
+            default:
+                logger.warn("Unknown role for query team mapping: {}", role);
+                return null;
+        }
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<Query> findWorkflowQueriesResolvedByRole(Long workflowId, String role) {
+        QueryTeam team = mapRoleToQueryTeam(role);
+        if (team == null) {
+            return java.util.Collections.emptyList();
+        }
+        
+        // Find resolved queries for this workflow that were assigned to the specified team
+        return queryRepository.findByWorkflow_IdAndAssignedTeamAndStatus(workflowId, team, QueryStatus.RESOLVED);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<Query> findMaterialQueriesResolvedByRole(String materialCode, String role) {
+        QueryTeam team = mapRoleToQueryTeam(role);
+        if (team == null) {
+            return java.util.Collections.emptyList();
+        }
+        
+        // Find resolved queries for this material that were assigned to the specified team
+        List<Query> allQueries = queryRepository.findByWorkflow_MaterialCodeAndAssignedTeamAndStatus(materialCode, team, QueryStatus.RESOLVED);
+        return allQueries;
     }
     
     @Override

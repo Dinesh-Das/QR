@@ -1,95 +1,126 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Query Resolved</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            line-height: 1.6; 
-            color: #2c3e50; 
+            line-height: 1.6;
+            color: #2c3e50;
             background-color: #f8fafc;
         }
-        .container { 
-            max-width: 600px; 
-            margin: 0 auto; 
-            background: white; 
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
         }
-        .header { 
+
+        .header {
             background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-            color: white; 
-            padding: 32px 24px; 
+            color: white;
+            padding: 32px 24px;
             text-align: center;
         }
-        .header h1 { 
-            font-size: 24px; 
-            font-weight: 600; 
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
             margin-bottom: 8px;
         }
-        .header p { 
-            opacity: 0.9; 
+
+        .header p {
+            opacity: 0.9;
             font-size: 16px;
         }
+
         .success-icon {
             font-size: 48px;
             margin-bottom: 16px;
         }
-        .content { 
+
+        .content {
             padding: 32px 24px;
         }
-        .greeting { 
-            font-size: 16px; 
-            margin-bottom: 24px; 
+
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 24px;
             color: #4a5568;
         }
-        .card { 
-            background: #f7fafc; 
-            border-radius: 12px; 
-            padding: 20px; 
-            margin: 20px 0; 
+
+        .card {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
             border-left: 4px solid #e2e8f0;
         }
-        .card.material { border-left-color: #4299e1; }
-        .card.query { border-left-color: #ed8936; }
-        .card.response { border-left-color: #48bb78; background: #f0fff4; }
-        .card h3 { 
-            font-size: 18px; 
-            font-weight: 600; 
-            margin-bottom: 16px; 
+
+        .card.material {
+            border-left-color: #4299e1;
+        }
+
+        .card.query {
+            border-left-color: #ed8936;
+        }
+
+        .card.response {
+            border-left-color: #48bb78;
+            background: #f0fff4;
+        }
+
+        .card h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
             color: #2d3748;
         }
-        .info-grid { 
-            display: grid; 
+
+        .info-grid {
+            display: grid;
             gap: 12px;
         }
-        .info-item { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 8px 0;
         }
-        .info-label { 
-            font-weight: 500; 
-            color: #4a5568; 
+
+        .info-label {
+            font-weight: 500;
+            color: #4a5568;
             min-width: 120px;
         }
-        .info-value { 
-            color: #2d3748; 
-            font-weight: 500; 
+
+        .info-value {
+            color: #2d3748;
+            font-weight: 500;
             text-align: right;
         }
-        .question-box { 
-            background: white; 
-            border: 1px solid #e2e8f0; 
-            border-radius: 8px; 
-            padding: 16px; 
-            margin: 12px 0; 
-            font-style: italic; 
+
+        .question-box {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+            font-style: italic;
             color: #4a5568;
         }
+
         .response-box {
             background: white;
             border: 1px solid #e2e8f0;
@@ -99,43 +130,68 @@
             color: #2d3748;
             line-height: 1.6;
         }
-        .team-badge { 
-            background: #48bb78; 
-            color: white; 
-            padding: 4px 12px; 
-            border-radius: 20px; 
-            font-size: 14px; 
+
+        .team-badge {
+            background: #48bb78;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
             font-weight: 500;
         }
-        .cta { 
+
+        .cta {
             background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-            color: white; 
-            padding: 16px 24px; 
-            border-radius: 8px; 
-            text-align: center; 
-            margin: 24px 0; 
-            text-decoration: none; 
-            display: block; 
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 24px 0;
+            text-decoration: none;
+            display: block;
             font-weight: 500;
         }
-        .footer { 
-            background: #f7fafc; 
-            padding: 24px; 
-            text-align: center; 
-            border-top: 1px solid #e2e8f0; 
-            font-size: 14px; 
+
+        .footer {
+            background: #f7fafc;
+            padding: 24px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+            font-size: 14px;
             color: #718096;
         }
-        .footer p { margin: 4px 0; }
+
+        .footer p {
+            margin: 4px 0;
+        }
+
         @media (max-width: 600px) {
-            .container { margin: 0; box-shadow: none; }
-            .content { padding: 24px 16px; }
-            .header { padding: 24px 16px; }
-            .info-item { flex-direction: column; align-items: flex-start; }
-            .info-value { text-align: left; margin-top: 4px; }
+            .container {
+                margin: 0;
+                box-shadow: none;
+            }
+
+            .content {
+                padding: 24px 16px;
+            }
+
+            .header {
+                padding: 24px 16px;
+            }
+
+            .info-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .info-value {
+                text-align: left;
+                margin-top: 4px;
+            }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
@@ -143,12 +199,14 @@
             <h1>Query Resolved</h1>
             <p>Your query has been successfully resolved</p>
         </div>
-        
+
         <div class="content">
             <p class="greeting">Hello,</p>
-            
-            <p>Great news! A query you raised has been resolved by the <span class="team-badge" th:text="${query.assignedTeam.displayName}">CQS</span> team. You can now continue with your questionnaire.</p>
-            
+
+            <p>Great news! A query you raised has been resolved by the <span class="team-badge"
+                    th:text="${query.assignedTeam.displayName}">CQS</span> team. You can now continue with your
+                questionnaire.</p>
+
             <div class="card material">
                 <h3>Material Information</h3>
                 <div class="info-grid">
@@ -158,7 +216,8 @@
                     </div>
                     <div class="info-item">
                         <span class="info-label">Material Name</span>
-                        <span class="info-value" th:text="${query.workflow.materialName ?: 'N/A'}">Sample Material</span>
+                        <span class="info-value" th:text="${query.workflow.materialName ?: 'N/A'}">Sample
+                            Material</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Plant</span>
@@ -166,7 +225,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="card query">
                 <h3>Query Details</h3>
                 <div class="info-grid">
@@ -178,9 +237,17 @@
                         <span class="info-label">Step</span>
                         <span class="info-value" th:text="${query.stepNumber ?: 'N/A'}">3</span>
                     </div>
-                    <div class="info-item">
-                        <span class="info-label">Field</span>
-                        <span class="info-value" th:text="${query.fieldName ?: 'N/A'}">Chemical Composition</span>
+                    <div class="info-item" th:if="${query.fieldName}">
+                        <span class="info-label">Field Context</span>
+                        <span class="info-value" th:text="${query.fieldName}">Chemical Composition</span>
+                    </div>
+                    <div class="info-item" th:if="${query.stepNumber}">
+                        <span class="info-label">Questionnaire Step</span>
+                        <span class="info-value">
+                            <span th:text="'Step ' + ${query.stepNumber}">Step 1</span>
+                            <span th:if="${query.stepTitle}" th:text="': ' + ${query.stepTitle}">: Material
+                                Information</span>
+                        </span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Resolved By</span>
@@ -188,30 +255,39 @@
                     </div>
                     <div class="info-item">
                         <span class="info-label">Resolution Date</span>
-                        <span class="info-value" th:text="${#temporals.format(query.resolvedAt, 'MMM dd, yyyy HH:mm')}">Jan 15, 2024 14:30</span>
+                        <span class="info-value"
+                            th:text="${#temporals.format(query.resolvedAt, 'MMM dd, yyyy HH:mm')}">Jan 15, 2024
+                            14:30</span>
                     </div>
                 </div>
+                <div class="question-box" th:if="${query.originalQuestion}">
+                    <strong>Original Question:</strong> <span th:text="${query.originalQuestion}"
+                        style="color: #52c41a;">What is the exact chemical composition?</span>
+                </div>
                 <div class="question-box">
-                    <strong>Your Question:</strong> <span th:text="${query.question}">What is the exact chemical composition?</span>
+                    <strong>Your Query:</strong> <span th:text="${query.question}">I need clarification on the chemical
+                        composition format.</span>
                 </div>
             </div>
-            
+
             <div class="card response">
                 <h3>Expert Response</h3>
                 <div class="response-box" th:text="${query.response}">
-                    The chemical composition is as follows: Component A (45%), Component B (30%), Component C (25%). Please refer to the attached safety data sheet for detailed information.
+                    The chemical composition is as follows: Component A (45%), Component B (30%), Component C (25%).
+                    Please refer to the attached safety data sheet for detailed information.
                 </div>
             </div>
-            
+
             <div class="cta">
                 Continue with Questionnaire
             </div>
         </div>
-        
+
         <div class="footer">
             <p>This is an automated notification from the QRMFG MSDS Workflow System.</p>
             <p>Please do not reply to this email.</p>
         </div>
     </div>
 </body>
+
 </html>

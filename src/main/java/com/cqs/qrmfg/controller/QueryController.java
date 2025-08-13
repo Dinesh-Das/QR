@@ -374,6 +374,33 @@ public class QueryController {
         return ResponseEntity.ok(queryDtos);
     }
 
+    // Role-based query history endpoints
+    @GetMapping("/workflow/{workflowId}/history/{role}")
+    @PreAuthorize("hasRole('JVC_USER') or hasRole('CQS_USER') or hasRole('TECH_USER') or hasRole('PLANT_USER') or hasRole('ADMIN')")
+    public ResponseEntity<List<QuerySummaryDto>> getWorkflowQueryHistoryByRole(@PathVariable Long workflowId, @PathVariable String role) {
+        try {
+            List<Query> queries = queryService.findWorkflowQueriesResolvedByRole(workflowId, role);
+            List<QuerySummaryDto> queryDtos = queryMapper.toSummaryDtoList(queries);
+            return ResponseEntity.ok(queryDtos);
+        } catch (Exception e) {
+            logger.error("Failed to get workflow query history for role {}: {}", role, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/material/{materialCode}/history/{role}")
+    @PreAuthorize("hasRole('JVC_USER') or hasRole('CQS_USER') or hasRole('TECH_USER') or hasRole('PLANT_USER') or hasRole('ADMIN')")
+    public ResponseEntity<List<QuerySummaryDto>> getMaterialQueryHistoryByRole(@PathVariable String materialCode, @PathVariable String role) {
+        try {
+            List<Query> queries = queryService.findMaterialQueriesResolvedByRole(materialCode, role);
+            List<QuerySummaryDto> queryDtos = queryMapper.toSummaryDtoList(queries);
+            return ResponseEntity.ok(queryDtos);
+        } catch (Exception e) {
+            logger.error("Failed to get material query history for role {}: {}", role, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     // Dashboard and reporting endpoints
     @GetMapping("/pending")
     @PreAuthorize("hasRole('JVC_USER') or hasRole('CQS_USER') or hasRole('TECH_USER') or hasRole('PLANT_USER') or hasRole('ADMIN')")

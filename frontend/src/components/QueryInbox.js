@@ -307,14 +307,17 @@ const QueryInbox = ({ team }) => {
       )
     },
     {
-      title: 'Question',
+      title: 'Query',
       dataIndex: 'question',
       key: 'question',
+      width: 300,
       ellipsis: true,
-      render: text => (
-        <Tooltip title={text}>
-          <Text>{text}</Text>
-        </Tooltip>
+      render: (text) => (
+        <div>
+          <Text style={{ color: '#1890ff' }}>
+            {text || 'No query text available'}
+          </Text>
+        </div>
       )
     },
     {
@@ -334,17 +337,12 @@ const QueryInbox = ({ team }) => {
       }
     },
     {
-      title: 'Field Context',
-      dataIndex: 'fieldContext',
-      key: 'fieldContext',
+      title: 'Field',
+      dataIndex: 'fieldName',
+      key: 'fieldName',
       width: 120,
-      render: (text, record) => (
-        <div>
-          {text && <Tag color="blue">{text}</Tag>}
-          {record.stepNumber && (
-            <div style={{ fontSize: '12px', color: '#666' }}>Step {record.stepNumber}</div>
-          )}
-        </div>
+      render: (text) => (
+        text ? <Tag color="blue">{text}</Tag> : <Text type="secondary">-</Text>
       )
     },
     {
@@ -752,25 +750,87 @@ const QueryInbox = ({ team }) => {
                       </>
                     )}
 
+                  {/* Field Context Section */}
                   {selectedQuery.fieldName && (
                     <>
-                      <Text strong>Field Context:</Text> {selectedQuery.fieldName}
-                      {selectedQuery.stepNumber && ` (Step ${selectedQuery.stepNumber})`}
-                      <Divider />
+                      <div style={{ marginBottom: 16 }}>
+                        <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
+                          Field Context
+                        </Text>
+                        <div style={{ 
+                          marginTop: 8, 
+                          padding: 12, 
+                          background: '#e6f7ff', 
+                          borderRadius: 6,
+                          border: '1px solid #91d5ff'
+                        }}>
+                          <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                            {selectedQuery.fieldName}
+                          </div>
+                          {selectedQuery.stepNumber && (
+                            <div style={{ fontSize: '12px', color: '#666', marginTop: 4 }}>
+                              Step {selectedQuery.stepNumber}
+                              {selectedQuery.stepTitle && `: ${selectedQuery.stepTitle}`}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </>
                   )}
 
-                  <Text strong>Question:</Text>
-                  <div
-                    style={{
+                  {/* Original Question Section */}
+                  {selectedQuery.originalQuestion && (
+                    <div style={{ marginBottom: 16 }}>
+                      <Text strong style={{ fontSize: '16px', color: '#52c41a' }}>
+                        Original Questionnaire Question
+                      </Text>
+                      <div style={{
+                        marginTop: 8,
+                        padding: 12,
+                        background: '#f6ffed',
+                        borderRadius: 6,
+                        border: '1px solid #b7eb8f',
+                        fontStyle: 'italic'
+                      }}>
+                        {selectedQuery.originalQuestion}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Query Category Section */}
+                  {selectedQuery.queryCategory && (
+                    <div style={{ marginBottom: 16 }}>
+                      <Text strong style={{ fontSize: '16px', color: '#722ed1' }}>
+                        Query Category
+                      </Text>
+                      <div style={{
+                        marginTop: 8,
+                        padding: 8,
+                        background: '#f9f0ff',
+                        borderRadius: 6,
+                        border: '1px solid #d3adf7'
+                      }}>
+                        <Tag color="purple">{selectedQuery.queryCategory}</Tag>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Raised Query Text Section */}
+                  <div style={{ marginBottom: 16 }}>
+                    <Text strong style={{ fontSize: '16px', color: '#fa8c16' }}>
+                      Query Text (What was asked)
+                    </Text>
+                    <div style={{
                       marginTop: 8,
                       padding: 12,
-                      background: '#f5f5f5',
-                      borderRadius: 4,
-                      whiteSpace: 'pre-wrap'
-                    }}
-                  >
-                    {selectedQuery.question}
+                      background: '#fff7e6',
+                      borderRadius: 6,
+                      border: '1px solid #ffd591',
+                      whiteSpace: 'pre-wrap',
+                      minHeight: '60px'
+                    }}>
+                      {selectedQuery.question || 'No query text available'}
+                    </div>
                   </div>
 
                   {selectedQuery.response && (
