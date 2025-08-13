@@ -131,11 +131,11 @@ public class Workflow {
     }
 
     public boolean hasOpenQueries() {
-        return queries.stream().anyMatch(query -> query.getStatus() == QueryStatus.OPEN);
+        return queries.stream().anyMatch(query -> query.getStatus().isActive());
     }
 
     public long getOpenQueriesCount() {
-        return queries.stream().filter(query -> query.getStatus() == QueryStatus.OPEN).count();
+        return queries.stream().filter(query -> query.getStatus().isActive()).count();
     }
 
     public long getTotalQueriesCount() {

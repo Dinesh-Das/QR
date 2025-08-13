@@ -23,8 +23,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -135,10 +138,17 @@ public class QueryServiceImpl implements QueryService {
         
         Query savedQuery = queryRepository.save(query);
         
-        // TODO: Temporarily disabled to debug 500 error
         // Transition workflow to appropriate query state
-        // WorkflowState queryState = assignedTeam.getCorrespondingWorkflowState();
-        // workflowService.transitionToState(workflowId, queryState, raisedBy);
+        try {
+            WorkflowState queryState = assignedTeam.getCorrespondingWorkflowState();
+            workflowService.transitionToState(workflowId, queryState, raisedBy);
+            logger.info("Workflow {} transitioned to state {} for query assignment to {}", 
+                       workflowId, queryState, assignedTeam);
+        } catch (Exception e) {
+            logger.warn("Failed to transition workflow {} to query state for team {}: {}", 
+                       workflowId, assignedTeam, e.getMessage());
+            // Don't fail the query creation if workflow transition fails
+        }
         
         // Send comprehensive notifications for query creation
         try {
@@ -612,7 +622,7 @@ public class QueryServiceImpl implements QueryService {
     @Transactional(readOnly = true)
     public boolean canUserResolveQuery(Query query, String username) {
         // Basic implementation - can be enhanced with role-based checks
-        return query.getStatus() == QueryStatus.OPEN && username != null && !username.trim().isEmpty();
+        return query.getStatus().isActive() && username != null && !username.trim().isEmpty();
     }
     
     @Override
@@ -653,5 +663,95 @@ public class QueryServiceImpl implements QueryService {
     public List<Query> searchQueriesWithContext(String materialCode, String projectCode, String plantCode, String team, String status, String priority, int minDaysOpen) {
         // TODO: Implement actual search logic
         return java.util.Collections.emptyList();
+    }
+
+    // Enhanced Query Status Management Methods
+    
+
+    
+    /**
+     * Close query without resolution
+     */
+    @Override
+    @Transactional
+    public Query closeQuery(Long queryId, String reason, String closedBy) {
+        Query query = queryRepository.findById(queryId)
+            .orElseThrow(() -> new QueryNotFoundException(queryId));
+        
+        if (!query.getStatus().isActive()) {
+            throw new IllegalStateException("Can only close active queries");
+        }
+        
+        query.setStatus(QueryStatus.CLOSED);
+        query.setResponse("Query closed: " + reason);
+        query.setResolvedBy(closedBy);
+        query.setResolvedAt(LocalDateTime.now());
+        query.setUpdatedBy(closedBy);
+        query.setLastModified(LocalDateTime.now());
+        
+        Query savedQuery = queryRepository.save(query);
+        
+        logger.info("Query {} closed by {} with reason: {}", queryId, closedBy, reason);
+        
+        // Send notification
+        try {
+            notificationService.notifyQueryResolved(savedQuery);
+        } catch (Exception e) {
+            logger.warn("Failed to send query closed notification: {}", e.getMessage());
+        }
+        
+        return savedQuery;
+    }
+    
+    /**
+     * Check if plant can still edit form while queries are active
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canPlantEditForm(Long workflowId) {
+        Workflow workflow = workflowRepository.findById(workflowId)
+            .orElseThrow(() -> new WorkflowNotFoundException(workflowId));
+        
+        // Plant can edit if workflow is not completed and queries allow editing
+        if (workflow.getState() == WorkflowState.COMPLETED) {
+            return false;
+        }
+        
+        // Check if any queries prevent editing
+        boolean hasBlockingQueries = workflow.getQueries().stream()
+            .anyMatch(q -> !q.getStatus().allowsPlantEditing());
+        
+        return !hasBlockingQueries;
+    }
+    
+    /**
+     * Get query status summary for a workflow
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getQueryStatusSummary(Long workflowId) {
+        Workflow workflow = workflowRepository.findById(workflowId)
+            .orElseThrow(() -> new WorkflowNotFoundException(workflowId));
+        
+        Map<String, Object> summary = new HashMap<>();
+        
+        // Count queries by status
+        Map<QueryStatus, Long> statusCounts = workflow.getQueries().stream()
+            .collect(Collectors.groupingBy(Query::getStatus, Collectors.counting()));
+        
+        summary.put("statusCounts", statusCounts);
+        summary.put("totalQueries", workflow.getQueries().size());
+        summary.put("activeQueries", workflow.getQueries().stream().filter(q -> q.getStatus().isActive()).count());
+        summary.put("canPlantEdit", canPlantEditForm(workflowId));
+        summary.put("workflowState", workflow.getState().name());
+        
+        // Group by team
+        Map<QueryTeam, Long> teamCounts = workflow.getQueries().stream()
+            .filter(q -> q.getStatus().isActive())
+            .collect(Collectors.groupingBy(Query::getAssignedTeam, Collectors.counting()));
+        
+        summary.put("activeQueriesByTeam", teamCounts);
+        
+        return summary;
     }
 }

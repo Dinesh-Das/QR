@@ -254,5 +254,32 @@ export const queryAPI = {
    */
   deleteQueryDocument: (queryId, documentId) => {
     return apiClient.delete(`/queries/${queryId}/documents/${documentId}`);
-  }
+  },
+
+  // Enhanced Query Status Management (New APIs)
+
+  /**
+   * Close query without resolution
+   * @param {string} queryId - Query ID
+   * @param {string} reason - Reason for closing
+   * @returns {Promise<Object>} Updated query object
+   */
+  closeQuery: (queryId, reason) => 
+    apiClient.post(`/queries/${queryId}/close`, { reason }),
+
+  /**
+   * Check if plant can edit form while queries are active
+   * @param {string} workflowId - Workflow ID
+   * @returns {Promise<Object>} Object with canEdit boolean
+   */
+  canPlantEditForm: (workflowId) => 
+    apiClient.get(`/queries/workflow/${workflowId}/can-edit`),
+
+  /**
+   * Get comprehensive query status summary for workflow
+   * @param {string} workflowId - Workflow ID
+   * @returns {Promise<Object>} Query status summary
+   */
+  getQueryStatusSummary: (workflowId) => 
+    apiClient.get(`/queries/workflow/${workflowId}/status-summary`)
 };

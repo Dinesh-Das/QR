@@ -168,6 +168,12 @@ export const QUERY_STATUS = {
   CLOSED: 'CLOSED'
 };
 
+// Query status groups for filtering
+export const QUERY_STATUS_GROUPS = {
+  ACTIVE: ['OPEN'],
+  INACTIVE: ['RESOLVED', 'CLOSED']
+};
+
 // Team names
 export const TEAM_NAMES = {
   CQS: 'CQS',

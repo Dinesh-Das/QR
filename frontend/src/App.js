@@ -32,6 +32,7 @@ const Roles = React.lazy(() => import('./screens/Roles'));
 const Sessions = React.lazy(() => import('./screens/Sessions'));
 const UserRoleManagement = React.lazy(() => import('./screens/UserRoleManagement'));
 const WorkflowMonitoring = React.lazy(() => import('./screens/WorkflowMonitoring'));
+const QRAnalytics = React.lazy(() => import('./screens/QRAnalytics'));
 
 const { Header, Content, Footer } = Layout;
 
@@ -217,6 +218,16 @@ function App() {
                       <RouteErrorBoundary routeName="Workflow Monitoring">
                         <ProtectedRoute>
                           <WorkflowMonitoring />
+                        </ProtectedRoute>
+                      </RouteErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/qrmfg/qr-analytics"
+                    element={
+                      <RouteErrorBoundary routeName="QR Analytics">
+                        <ProtectedRoute>
+                          <QRAnalytics />
                         </ProtectedRoute>
                       </RouteErrorBoundary>
                     }

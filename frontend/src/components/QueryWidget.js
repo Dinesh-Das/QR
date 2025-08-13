@@ -2,7 +2,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { Card, Tabs, Table, Tag, Button, Space, Modal, Form, Input, Select, Badge } from 'antd';
 import React, { useState, useEffect, useCallback } from 'react';
 
-import { UI_CONFIG, QUERY_STATUS, TEAM_NAMES } from '../constants';
+import { UI_CONFIG, QUERY_STATUS, QUERY_STATUS_GROUPS, TEAM_NAMES } from '../constants';
 import { queryAPI } from '../services/queryAPI';
 
 // Hook to detect screen size
@@ -66,8 +66,8 @@ const QueryWidget = ({ workflowId, userRole }) => {
           if (!controller.signal.aborted) {
             setQueries({
               all: allQueries,
-              open: allQueries.filter(q => q.status === QUERY_STATUS.OPEN),
-              resolved: allQueries.filter(q => q.status === QUERY_STATUS.RESOLVED),
+              open: allQueries.filter(q => QUERY_STATUS_GROUPS.ACTIVE.includes(q.status)),
+              resolved: allQueries.filter(q => QUERY_STATUS_GROUPS.INACTIVE.includes(q.status)),
               myQueries: allQueries.filter(q => q.createdBy === getCurrentUser())
             });
           }
@@ -99,8 +99,8 @@ const QueryWidget = ({ workflowId, userRole }) => {
         if (!signal?.aborted) {
           setQueries({
             all: allQueries,
-            open: allQueries.filter(q => q.status === QUERY_STATUS.OPEN),
-            resolved: allQueries.filter(q => q.status === QUERY_STATUS.RESOLVED),
+            open: allQueries.filter(q => QUERY_STATUS_GROUPS.ACTIVE.includes(q.status)),
+            resolved: allQueries.filter(q => QUERY_STATUS_GROUPS.INACTIVE.includes(q.status)),
             myQueries: allQueries.filter(q => q.createdBy === getCurrentUser())
           });
         }
@@ -153,7 +153,12 @@ const QueryWidget = ({ workflowId, userRole }) => {
   };
 
   const getStatusColor = status => {
-    return status === QUERY_STATUS.OPEN ? 'red' : 'green';
+    const statusColors = {
+      [QUERY_STATUS.OPEN]: 'red',
+      [QUERY_STATUS.RESOLVED]: 'green',
+      [QUERY_STATUS.CLOSED]: 'gray'
+    };
+    return statusColors[status] || 'default';
   };
 
   const getTeamColor = team => {
@@ -203,11 +208,19 @@ const QueryWidget = ({ workflowId, userRole }) => {
         dataIndex: 'status',
         key: 'status',
         width: isMobile ? 60 : 80,
-        render: status => (
-          <Tag color={getStatusColor(status)} size={isMobile ? 'small' : 'default'}>
-            {isMobile ? status.substring(0, 4) : status}
-          </Tag>
-        )
+        render: status => {
+          const statusDisplayNames = {
+            [QUERY_STATUS.OPEN]: 'Open',
+            [QUERY_STATUS.RESOLVED]: 'Resolved',
+            [QUERY_STATUS.CLOSED]: 'Closed'
+          };
+          
+          return (
+            <Tag color={getStatusColor(status)} size={isMobile ? 'small' : 'default'}>
+              {statusDisplayNames[status] || status}
+            </Tag>
+          );
+        }
       },
       {
         title: 'Context',
@@ -240,17 +253,33 @@ const QueryWidget = ({ workflowId, userRole }) => {
         fixed: isMobile ? 'right' : false,
         render: (_, record) => (
           <Space>
-            <Button
-              size="small"
-              type="link"
-              onClick={() => {
-                setSelectedQuery(record);
-                setResolveModalVisible(true);
-              }}
-              disabled={record.status === QUERY_STATUS.RESOLVED || !canResolveQuery(record)}
-            >
-              {record.status === QUERY_STATUS.OPEN ? (isMobile ? 'Fix' : 'Resolve') : 'View'}
-            </Button>
+            {/* Resolve Button - For team members on OPEN queries */}
+            {record.status === QUERY_STATUS.OPEN && canResolveQuery(record) && (
+              <Button
+                size="small"
+                type="primary"
+                onClick={() => {
+                  setSelectedQuery(record);
+                  setResolveModalVisible(true);
+                }}
+              >
+                {isMobile ? 'Resolve' : 'Resolve'}
+              </Button>
+            )}
+            
+            {/* View Button - For inactive queries */}
+            {QUERY_STATUS_GROUPS.INACTIVE.includes(record.status) && (
+              <Button
+                size="small"
+                type="link"
+                onClick={() => {
+                  setSelectedQuery(record);
+                  setResolveModalVisible(true);
+                }}
+              >
+                View
+              </Button>
+            )}
           </Space>
         )
       }
@@ -266,6 +295,8 @@ const QueryWidget = ({ workflowId, userRole }) => {
   const canResolveQuery = query => {
     return query.assignedTeam === userRole || userRole === 'ADMIN';
   };
+
+
 
   const getTabCount = queryList => {
     return queryList.length > 0 ? queryList.length : null;
@@ -461,6 +492,8 @@ const QueryWidget = ({ workflowId, userRole }) => {
           </>
         )}
       </Modal>
+
+
     </Card>
   );
 };

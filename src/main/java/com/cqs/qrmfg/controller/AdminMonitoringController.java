@@ -1,162 +1,136 @@
 package com.cqs.qrmfg.controller;
 
-import com.cqs.qrmfg.dto.WorkflowMonitoringDto;
-import com.cqs.qrmfg.dto.QuerySlaReportDto;
-import com.cqs.qrmfg.dto.UserRoleAssignmentDto;
-import com.cqs.qrmfg.service.AdminMonitoringService;
+import com.cqs.qrmfg.annotation.RequireRole;
+import com.cqs.qrmfg.annotation.PlantDataFilter;
+import com.cqs.qrmfg.dto.QRAnalyticsDashboardDto;
+import com.cqs.qrmfg.enums.RoleType;
+import com.cqs.qrmfg.service.QRAnalyticsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/admin/monitoring")
-@PreAuthorize("hasRole('ADMIN')")
+@RequestMapping("/api/v1/test-analytics")
 public class AdminMonitoringController {
 
     @Autowired
-    private AdminMonitoringService adminMonitoringService;
+    private QRAnalyticsService qrAnalyticsService;
 
     /**
-     * Get workflow monitoring dashboard data
+     * Simple test endpoint to verify controller is accessible
+     */
+    @GetMapping("/test")
+    public ResponseEntity<String> testEndpoint() {
+        return ResponseEntity.ok("QR Analytics Controller is working!");
+    }
+
+    /**
+     * Get workflow analytics dashboard data from database
      */
     @GetMapping("/dashboard")
-    public ResponseEntity<WorkflowMonitoringDto> getWorkflowMonitoringDashboard() {
-        WorkflowMonitoringDto dashboard = adminMonitoringService.getWorkflowMonitoringDashboard();
+    public ResponseEntity<Map<String, Object>> getWorkflowAnalyticsDashboard(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(required = false) String plantCode) {
+        
+        Map<String, Object> dashboard = qrAnalyticsService.getWorkflowAnalyticsDashboard(startDate, endDate, plantCode);
         return ResponseEntity.ok(dashboard);
     }
 
-    /**
-     * Get workflow status distribution
-     */
-    @GetMapping("/workflow-status")
-    public ResponseEntity<Map<String, Long>> getWorkflowStatusDistribution() {
-        Map<String, Long> statusDistribution = adminMonitoringService.getWorkflowStatusDistribution();
-        return ResponseEntity.ok(statusDistribution);
-    }
+
 
     /**
-     * Get query SLA reports
+     * Get workflow SLA metrics from database
      */
-    @GetMapping("/query-sla")
-    public ResponseEntity<QuerySlaReportDto> getQuerySlaReport(
+    @GetMapping("/sla-metrics")
+    public ResponseEntity<Map<String, Object>> getSlaMetrics(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(required = false) String plantCode) {
         
-        QuerySlaReportDto report = adminMonitoringService.getQuerySlaReport(startDate, endDate);
-        return ResponseEntity.ok(report);
+        Map<String, Object> slaMetrics = qrAnalyticsService.getSlaMetrics(startDate, endDate, plantCode);
+        return ResponseEntity.ok(slaMetrics);
     }
 
     /**
-     * Get average resolution times by team
-     */
-    @GetMapping("/resolution-times")
-    public ResponseEntity<Map<String, Double>> getAverageResolutionTimes(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
-        
-        Map<String, Double> resolutionTimes = adminMonitoringService.getAverageResolutionTimesByTeam(startDate, endDate);
-        return ResponseEntity.ok(resolutionTimes);
-    }
-
-    /**
-     * Get workflow bottlenecks analysis
+     * Get workflow bottlenecks analysis from database
      */
     @GetMapping("/bottlenecks")
-    public ResponseEntity<Map<String, Object>> getWorkflowBottlenecks() {
-        Map<String, Object> bottlenecks = adminMonitoringService.getWorkflowBottlenecks();
+    public ResponseEntity<Map<String, Object>> getBottlenecksAnalysis(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(required = false) String plantCode) {
+        
+        Map<String, Object> bottlenecks = qrAnalyticsService.getBottlenecksAnalysis(startDate, endDate, plantCode);
         return ResponseEntity.ok(bottlenecks);
     }
 
     /**
-     * Get user activity summary
+     * Get workflow performance metrics from database
      */
-    @GetMapping("/user-activity")
-    public ResponseEntity<List<Map<String, Object>>> getUserActivitySummary(
-            @RequestParam(defaultValue = "30") int days) {
-        
-        List<Map<String, Object>> userActivity = adminMonitoringService.getUserActivitySummary(days);
-        return ResponseEntity.ok(userActivity);
-    }
-
-    /**
-     * Get workflow performance metrics
-     */
-    @GetMapping("/performance")
-    public ResponseEntity<Map<String, Object>> getWorkflowPerformanceMetrics(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
-        
-        Map<String, Object> metrics = adminMonitoringService.getWorkflowPerformanceMetrics(startDate, endDate);
-        return ResponseEntity.ok(metrics);
-    }
-
-    /**
-     * Export audit logs as CSV
-     */
-    @GetMapping("/audit-logs/export")
-    public ResponseEntity<byte[]> exportAuditLogs(
+    @GetMapping("/performance-metrics")
+    public ResponseEntity<Map<String, Object>> getPerformanceMetrics(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
-            @RequestParam(required = false) String entityType,
-            @RequestParam(required = false) String action) {
+            @RequestParam(required = false) String plantCode) {
         
-        byte[] csvData = adminMonitoringService.exportAuditLogsAsCsv(startDate, endDate, entityType, action);
+        Map<String, Object> performanceMetrics = qrAnalyticsService.getPerformanceMetrics(startDate, endDate, plantCode);
+        return ResponseEntity.ok(performanceMetrics);
+    }
+
+    /**
+     * Export workflow analytics report as CSV
+     */
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportWorkflowAnalytics(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(required = false) String plantCode) {
+        
+        byte[] csvData = qrAnalyticsService.exportWorkflowAnalyticsAsCsv(startDate, endDate, plantCode);
         
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.setContentDispositionFormData("attachment", "audit-logs-" + System.currentTimeMillis() + ".csv");
+        headers.setContentDispositionFormData("attachment", "workflow-analytics-" + System.currentTimeMillis() + ".csv");
         
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(csvData);
     }
 
+
+    
     /**
-     * Export workflow report as CSV
+     * Get detailed query status breakdown for enhanced analytics
      */
-    @GetMapping("/workflows/export")
-    public ResponseEntity<byte[]> exportWorkflowReport(
+    @GetMapping("/query-status-breakdown")
+    public ResponseEntity<Map<String, Object>> getQueryStatusBreakdown(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
-            @RequestParam(required = false) String state) {
+            @RequestParam(required = false) String plantCode) {
         
-        byte[] csvData = adminMonitoringService.exportWorkflowReportAsCsv(startDate, endDate, state);
-        
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.setContentDispositionFormData("attachment", "workflow-report-" + System.currentTimeMillis() + ".csv");
-        
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(csvData);
+        Map<String, Object> breakdown = qrAnalyticsService.getQueryStatusBreakdown(startDate, endDate, plantCode);
+        return ResponseEntity.ok(breakdown);
     }
-
+    
     /**
-     * Get user role assignments for management
+     * Get performance rankings for users and teams
      */
-    @GetMapping("/user-roles")
-    public ResponseEntity<List<UserRoleAssignmentDto>> getUserRoleAssignments() {
-        List<UserRoleAssignmentDto> assignments = adminMonitoringService.getUserRoleAssignments();
-        return ResponseEntity.ok(assignments);
-    }
-
-    /**
-     * Update user role assignments
-     */
-    @PutMapping("/user-roles/{userId}")
-    public ResponseEntity<UserRoleAssignmentDto> updateUserRoles(
-            @PathVariable Long userId,
-            @RequestBody List<Long> roleIds) {
+    @GetMapping("/performance-rankings")
+    public ResponseEntity<Map<String, Object>> getPerformanceRankings(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(required = false) String plantCode) {
         
-        UserRoleAssignmentDto updated = adminMonitoringService.updateUserRoles(userId, roleIds);
-        return ResponseEntity.ok(updated);
+        Map<String, Object> rankings = qrAnalyticsService.getPerformanceRankings(startDate, endDate, plantCode);
+        return ResponseEntity.ok(rankings);
     }
 }

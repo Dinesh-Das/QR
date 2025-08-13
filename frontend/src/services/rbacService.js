@@ -188,10 +188,14 @@ class RBACService {
 
     if (isTechUser() || isAdmin()) {
       roleBasedItems.push(
-        { key: '/qrmfg/tech', icon: 'TeamOutlined', label: 'TECH', path: '/qrmfg/tech' },
-        { key: '/qrmfg/workflow-monitoring', icon: 'MonitorOutlined', label: 'Workflow Monitoring', path: '/qrmfg/workflow-monitoring' }
+        { key: '/qrmfg/tech', icon: 'TeamOutlined', label: 'TECH', path: '/qrmfg/tech' }
       );
     }
+
+    // QR Analytics accessible to all roles
+    roleBasedItems.push(
+      { key: '/qrmfg/qr-analytics', icon: 'MonitorOutlined', label: 'QR Analytics', path: '/qrmfg/qr-analytics' }
+    );
 
     // Tech users get specific admin tools they need for their work
     if (isTechUser() && !isAdmin()) {
@@ -254,6 +258,7 @@ class RBACService {
 
     const accessMap = {
       '/': true,
+      '/qrmfg/': true,
       '/dashboard': true,
       '/settings': true,
       '/admin': isAdmin(),
@@ -270,7 +275,11 @@ class RBACService {
       '/plant': isPlantUser() || isAdmin(),
       '/workflows': isJvcUser() || isCqsUser() || isTechUser() || isPlantUser() || isAdmin(),
       '/workflow-monitoring': isTechUser() || isAdmin(),
-      '/reports': !isViewer() || isAdmin()
+      '/reports': !isViewer() || isAdmin(),
+      '/analytics': true, // Analytics accessible to all authenticated users
+      '/qr-analytics': true, // QR Analytics accessible to all authenticated users
+      '/qrmfg/analytics': true, // Analytics with prefix
+      '/qrmfg/qr-analytics': true // QR Analytics with prefix
     };
 
     return accessMap[screenRoute] || false;
@@ -295,9 +304,12 @@ class RBACService {
 
     if (isJvcUser()) screens.push('/qrmfg/jvc', '/qrmfg/workflows');
     if (isCqsUser()) screens.push('/qrmfg/cqs', '/qrmfg/workflows');
-    if (isTechUser()) screens.push('/qrmfg/tech', '/qrmfg/workflows', '/qrmfg/workflow-monitoring', '/qrmfg/auditlogs', '/qrmfg/api-test');
+    if (isTechUser()) screens.push('/qrmfg/tech', '/qrmfg/workflows', '/qrmfg/auditlogs', '/qrmfg/api-test');
     if (isPlantUser()) screens.push('/qrmfg/plant', '/qrmfg/workflows');
     if (!isViewer()) screens.push('/qrmfg/reports');
+    
+    // QR Analytics accessible to all authenticated users
+    screens.push('/qrmfg/qr-analytics');
 
     return [...new Set(screens)];
   }

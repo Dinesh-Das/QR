@@ -26,9 +26,9 @@ const AdminPanel = () => {
     { key: '/qrmfg/admin/roles', label: 'Roles' },
     { key: '/qrmfg/admin/auditlogs', label: 'Audit Logs' },
     { key: '/qrmfg/admin/sessions', label: 'Sessions' },
-    { key: '/qrmfg/admin/workflow-monitoring', label: 'Workflow Monitoring' },
     { key: '/qrmfg/admin/user-role-management', label: 'User Role Management' },
-    { key: '/qrmfg/admin/notification-defaults', label: 'Notification Defaults' }
+    { key: '/qrmfg/admin/notification-defaults', label: 'Notification Defaults' },
+    { key: '/qrmfg/admin/workflow-monitoring', label: 'Legacy Monitoring' }
   ];
 
   // If we're at /qrmfg/admin, redirect to /qrmfg/admin/users
@@ -57,9 +57,9 @@ const AdminPanel = () => {
             <Route path="roles" element={<Roles />} />
             <Route path="auditlogs" element={<AuditLogs />} />
             <Route path="sessions" element={<Sessions />} />
-            <Route path="workflow-monitoring" element={<WorkflowMonitoring />} />
             <Route path="user-role-management" element={<UserRoleManagement />} />
             <Route path="notification-defaults" element={<NotificationDefaults />} />
+            <Route path="workflow-monitoring" element={<WorkflowMonitoring />} />
           </Routes>
         </div>
       </div>

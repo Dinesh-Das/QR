@@ -33,6 +33,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
+import java.util.Map;
 import javax.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -921,6 +923,64 @@ public class QueryController {
             error.put("error", e.getMessage());
             error.put("errorType", e.getClass().getSimpleName());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // Enhanced Query Status Management Endpoints
+    
+
+    
+    @PostMapping("/{queryId}/close")
+    @PreAuthorize("hasRole('JVC_USER') or hasRole('CQS_USER') or hasRole('TECH_USER') or hasRole('ADMIN')")
+    public ResponseEntity<QuerySummaryDto> closeQuery(
+            @PathVariable Long queryId, 
+            @RequestBody Map<String, String> request,
+            Authentication auth) {
+        try {
+            String username = auth.getName();
+            String reason = request.get("reason");
+            
+            if (reason == null || reason.trim().isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+            
+            Query query = queryService.closeQuery(queryId, reason, username);
+            QuerySummaryDto queryDto = queryMapper.toSummaryDto(query);
+            return ResponseEntity.ok(queryDto);
+        } catch (QueryNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            logger.error("Error closing query {}: {}", queryId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    @GetMapping("/workflow/{workflowId}/can-edit")
+    @PreAuthorize("hasRole('PLANT_USER') or hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> canPlantEditForm(@PathVariable Long workflowId) {
+        try {
+            boolean canEdit = queryService.canPlantEditForm(workflowId);
+            Map<String, Object> response = new HashMap<>();
+            response.put("canEdit", canEdit);
+            response.put("workflowId", workflowId);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error checking edit permissions for workflow {}: {}", workflowId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    @GetMapping("/workflow/{workflowId}/status-summary")
+    @PreAuthorize("hasRole('JVC_USER') or hasRole('CQS_USER') or hasRole('TECH_USER') or hasRole('PLANT_USER') or hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> getQueryStatusSummary(@PathVariable Long workflowId) {
+        try {
+            Map<String, Object> summary = queryService.getQueryStatusSummary(workflowId);
+            return ResponseEntity.ok(summary);
+        } catch (Exception e) {
+            logger.error("Error getting query status summary for workflow {}: {}", workflowId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

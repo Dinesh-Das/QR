@@ -137,7 +137,7 @@ public class SecurityConfig {
                            "/qrmfg/asset-manifest.json").permitAll()
                 // Allow React app routes (for client-side routing)
                 .antMatchers("/qrmfg", "/qrmfg/", "/qrmfg/dashboard", "/qrmfg/workflows", "/qrmfg/users", 
-                           "/qrmfg/roles", "/qrmfg/login", "/qrmfg/admin/**").permitAll()
+                           "/qrmfg/roles", "/qrmfg/login", "/qrmfg/admin/**", "/qrmfg/analytics", "/qrmfg/qr-analytics").permitAll()
                 
                 // All API endpoints require authentication (except those explicitly permitted above)
                 .antMatchers("/qrmfg/api/v1/**", "/api/v1/**").authenticated()
@@ -146,14 +146,13 @@ public class SecurityConfig {
             .and()
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
             
-        // Temporarily disable RBAC filter to test admin endpoints
         // Add RBAC filter only if RBAC is enabled
-        // if (rbacSecurityConfiguration.isEnabled()) {
-        //     http.addFilterAfter(
-        //         new RBACAuthorizationFilter(rbacAuthorizationService), 
-        //         FilterSecurityInterceptor.class
-        //     );
-        // }
+        if (rbacSecurityConfiguration.isEnabled()) {
+            http.addFilterAfter(
+                new RBACAuthorizationFilter(rbacAuthorizationService), 
+                FilterSecurityInterceptor.class
+            );
+        }
         
         return http.build();
     }

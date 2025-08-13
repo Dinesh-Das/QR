@@ -1,17 +1,165 @@
 import apiClient from '../api/client';
 
 /**
- * API service for monitoring and metrics endpoints
+ * API service for QR analytics and metrics endpoints
  */
-export const monitoringAPI = {
+export const qrAnalyticsAPI = {
   /**
-   * Get comprehensive metrics dashboard data
+   * Get QR analytics dashboard data with role-based filtering
    */
-  getMetricsDashboard: async () => {
+  getQRAnalyticsDashboard: async (startDate = null, endDate = null, plantCode = null) => {
     try {
-      return await apiClient.get('/metrics/dashboard');
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (plantCode) params.append('plantCode', plantCode);
+      
+      const queryString = params.toString();
+      const url = `/test-analytics/dashboard${queryString ? `?${queryString}` : ''}`;
+      
+      return await apiClient.get(url);
     } catch (error) {
-      console.error('Error fetching metrics dashboard:', error);
+      console.error('Error fetching QR analytics dashboard:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get workflow analytics dashboard data
+   */
+  getWorkflowAnalyticsDashboard: async (startDate = null, endDate = null, plantCode = null) => {
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (plantCode) params.append('plantCode', plantCode);
+      
+      const queryString = params.toString();
+      const url = `/test-analytics/dashboard${queryString ? `?${queryString}` : ''}`;
+      
+      return await apiClient.get(url);
+    } catch (error) {
+      console.error('Error fetching workflow analytics dashboard:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get SLA metrics
+   */
+  getSlaMetrics: async (startDate = null, endDate = null, plantCode = null) => {
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (plantCode) params.append('plantCode', plantCode);
+      
+      const queryString = params.toString();
+      const url = `/test-analytics/sla-metrics${queryString ? `?${queryString}` : ''}`;
+      
+      return await apiClient.get(url);
+    } catch (error) {
+      console.error('Error fetching SLA metrics:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get bottlenecks analysis
+   */
+  getBottlenecksAnalysis: async (startDate = null, endDate = null, plantCode = null) => {
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (plantCode) params.append('plantCode', plantCode);
+      
+      const queryString = params.toString();
+      const url = `/test-analytics/bottlenecks${queryString ? `?${queryString}` : ''}`;
+      
+      return await apiClient.get(url);
+    } catch (error) {
+      console.error('Error fetching bottlenecks analysis:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get performance metrics
+   */
+  getPerformanceMetrics: async (startDate = null, endDate = null, plantCode = null) => {
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (plantCode) params.append('plantCode', plantCode);
+      
+      const queryString = params.toString();
+      const url = `/test-analytics/performance-metrics${queryString ? `?${queryString}` : ''}`;
+      
+      return await apiClient.get(url);
+    } catch (error) {
+      console.error('Error fetching performance metrics:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get QR production metrics by plant
+   */
+  getProductionMetrics: async (startDate = null, endDate = null, plantCode = null) => {
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (plantCode) params.append('plantCode', plantCode);
+      
+      const queryString = params.toString();
+      const url = `/test-analytics/production-metrics${queryString ? `?${queryString}` : ''}`;
+      
+      return await apiClient.get(url);
+    } catch (error) {
+      console.error('Error fetching production metrics:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get QR quality metrics
+   */
+  getQualityMetrics: async (startDate = null, endDate = null, plantCode = null) => {
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (plantCode) params.append('plantCode', plantCode);
+      
+      const queryString = params.toString();
+      const url = `/test-analytics/quality-metrics${queryString ? `?${queryString}` : ''}`;
+      
+      return await apiClient.get(url);
+    } catch (error) {
+      console.error('Error fetching quality metrics:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get workflow efficiency analytics
+   */
+  getWorkflowEfficiency: async (startDate = null, endDate = null, plantCode = null) => {
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (plantCode) params.append('plantCode', plantCode);
+      
+      const queryString = params.toString();
+      const url = `/test-analytics/workflow-efficiency${queryString ? `?${queryString}` : ''}`;
+      
+      return await apiClient.get(url);
+    } catch (error) {
+      console.error('Error fetching workflow efficiency:', error);
       throw error;
     }
   },
@@ -21,7 +169,7 @@ export const monitoringAPI = {
    */
   getWorkflowMetrics: async () => {
     try {
-      return await apiClient.get('/metrics/workflow');
+      return await apiClient.get('/admin/monitoring/dashboard');
     } catch (error) {
       console.error('Error fetching workflow metrics:', error);
       throw error;
@@ -29,13 +177,37 @@ export const monitoringAPI = {
   },
 
   /**
-   * Get query-specific metrics
+   * Get query SLA reports
    */
   getQueryMetrics: async () => {
     try {
-      return await apiClient.get('/metrics/query');
+      return await apiClient.get('/admin/monitoring/query-sla');
     } catch (error) {
       console.error('Error fetching query metrics:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get workflow bottlenecks analysis
+   */
+  getBottlenecksAnalysis: async () => {
+    try {
+      return await apiClient.get('/admin/monitoring/bottlenecks');
+    } catch (error) {
+      console.error('Error fetching bottlenecks analysis:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get workflow status distribution
+   */
+  getWorkflowStatusDistribution: async () => {
+    try {
+      return await apiClient.get('/admin/monitoring/workflow-status');
+    } catch (error) {
+      console.error('Error fetching workflow status distribution:', error);
       throw error;
     }
   },
@@ -191,4 +363,6 @@ export const withActivityTracking = (WrappedComponent, componentName) => {
   };
 };
 
-export default monitoringAPI;
+// Maintain backward compatibility
+export const monitoringAPI = qrAnalyticsAPI;
+export default qrAnalyticsAPI;

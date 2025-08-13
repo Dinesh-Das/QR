@@ -44,6 +44,7 @@ public class SpaController {
         "/plant",
         "/workflows",
         "/workflow-monitoring",
+        "/qr-analytics",
         "/reports",
         "/users",
         "/roles",

@@ -194,6 +194,7 @@ public final class RBACConstants {
         adminScreens.add("/qrmfg/workflows");
         adminScreens.add("/qrmfg/workflow-monitoring");
         adminScreens.add("/qrmfg/reports");
+        adminScreens.add("/qrmfg/qr-analytics");
         adminScreens.add("/qrmfg/users");
         adminScreens.add("/qrmfg/roles");
         adminScreens.add("/qrmfg/sessions");
@@ -208,6 +209,7 @@ public final class RBACConstants {
         jvcScreens.add("/qrmfg/jvc");
         jvcScreens.add("/qrmfg/workflows");
         jvcScreens.add("/qrmfg/reports");
+        jvcScreens.add("/qrmfg/qr-analytics");
         jvcScreens.add("/qrmfg/settings");
         map.put(RoleType.JVC_ROLE, jvcScreens);
         
@@ -217,6 +219,7 @@ public final class RBACConstants {
         cqsScreens.add("/qrmfg/cqs");
         cqsScreens.add("/qrmfg/workflows");
         cqsScreens.add("/qrmfg/reports");
+        cqsScreens.add("/qrmfg/qr-analytics");
         cqsScreens.add("/qrmfg/settings");
         map.put(RoleType.CQS_ROLE, cqsScreens);
         
@@ -227,6 +230,7 @@ public final class RBACConstants {
         techScreens.add("/qrmfg/workflows");
         techScreens.add("/qrmfg/workflow-monitoring");
         techScreens.add("/qrmfg/reports");
+        techScreens.add("/qrmfg/qr-analytics");
         techScreens.add("/qrmfg/auditlogs");
         techScreens.add("/qrmfg/settings");
         map.put(RoleType.TECH_ROLE, techScreens);
@@ -237,6 +241,7 @@ public final class RBACConstants {
         plantScreens.add("/qrmfg/plant");
         plantScreens.add("/qrmfg/workflows");
         plantScreens.add("/qrmfg/reports");
+        plantScreens.add("/qrmfg/qr-analytics");
         plantScreens.add("/qrmfg/settings");
         map.put(RoleType.PLANT_ROLE, plantScreens);
         

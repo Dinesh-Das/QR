@@ -5,6 +5,7 @@ import com.cqs.qrmfg.model.QueryStatus;
 import com.cqs.qrmfg.model.QueryTeam;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface QueryService {
@@ -99,4 +100,11 @@ public interface QueryService {
     // Role-based query history
     List<Query> findWorkflowQueriesResolvedByRole(Long workflowId, String role);
     List<Query> findMaterialQueriesResolvedByRole(String materialCode, String role);
+    
+    // Enhanced Query Status Management
+    Query closeQuery(Long queryId, String reason, String closedBy);
+    
+    // Form Editing Permissions
+    boolean canPlantEditForm(Long workflowId);
+    Map<String, Object> getQueryStatusSummary(Long workflowId);
 }

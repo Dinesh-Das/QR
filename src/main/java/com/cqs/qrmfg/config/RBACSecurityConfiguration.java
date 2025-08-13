@@ -117,10 +117,10 @@ public class RBACSecurityConfiguration {
         
         // Default role URL patterns
         roleUrlPatterns.put(RoleType.ADMIN.getRoleName(), Arrays.asList("/**"));
-        roleUrlPatterns.put(RoleType.JVC_ROLE.getRoleName(), Arrays.asList("/qrmfg/api/v1/jvc/**", "/qrmfg/api/v1/workflows/**"));
-        roleUrlPatterns.put(RoleType.CQS_ROLE.getRoleName(), Arrays.asList("/qrmfg/api/v1/cqs/**", "/qrmfg/api/v1/quality/**", "/qrmfg/api/v1/workflows/**"));
-        roleUrlPatterns.put(RoleType.TECH_ROLE.getRoleName(), Arrays.asList("/qrmfg/api/v1/tech/**", "/qrmfg/api/v1/admin/users/**", "/qrmfg/api/v1/admin/audit/**"));
-        roleUrlPatterns.put(RoleType.PLANT_ROLE.getRoleName(), Arrays.asList("/qrmfg/api/v1/plant/**", "/qrmfg/api/v1/operations/**", "/qrmfg/api/v1/workflows/**"));
+        roleUrlPatterns.put(RoleType.JVC_ROLE.getRoleName(), Arrays.asList("/qrmfg/api/v1/jvc/**", "/qrmfg/api/v1/workflows/**", "/qrmfg/api/v1/test-analytics/**", "/api/v1/test-analytics/**"));
+        roleUrlPatterns.put(RoleType.CQS_ROLE.getRoleName(), Arrays.asList("/qrmfg/api/v1/cqs/**", "/qrmfg/api/v1/quality/**", "/qrmfg/api/v1/workflows/**", "/qrmfg/api/v1/test-analytics/**", "/api/v1/test-analytics/**"));
+        roleUrlPatterns.put(RoleType.TECH_ROLE.getRoleName(), Arrays.asList("/qrmfg/api/v1/tech/**", "/qrmfg/api/v1/admin/users/**", "/qrmfg/api/v1/admin/audit/**", "/qrmfg/api/v1/test-analytics/**", "/api/v1/test-analytics/**"));
+        roleUrlPatterns.put(RoleType.PLANT_ROLE.getRoleName(), Arrays.asList("/qrmfg/api/v1/plant/**", "/qrmfg/api/v1/operations/**", "/qrmfg/api/v1/workflows/**", "/qrmfg/api/v1/test-analytics/**", "/api/v1/test-analytics/**"));
     }
     
     // Getters and Setters

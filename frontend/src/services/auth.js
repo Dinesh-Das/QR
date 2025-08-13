@@ -535,6 +535,8 @@ export const hasScreenAccess = screenRoute => {
     '/qrmfg/workflows': isJvcUser() || isCqsUser() || isTechUser() || isPlantUser() || isAdmin(),
     '/qrmfg/workflow-monitoring': isTechUser() || isAdmin(),
     '/qrmfg/reports': !isViewer() || isAdmin(),
+    '/qrmfg/analytics': true, // Analytics accessible to all authenticated users
+    '/qrmfg/qr-analytics': true, // QR Analytics accessible to all authenticated users
     '/qrmfg/settings': true // Settings accessible to all authenticated users
   };
 
@@ -558,6 +560,8 @@ export const getAccessibleScreens = () => {
       '/qrmfg/workflows',
       '/qrmfg/workflow-monitoring',
       '/qrmfg/reports',
+      '/qrmfg/analytics',
+      '/qrmfg/qr-analytics',
       '/qrmfg/users',
       '/qrmfg/roles',
       '/qrmfg/sessions',
@@ -567,7 +571,7 @@ export const getAccessibleScreens = () => {
     ];
   }
 
-  const accessibleScreens = ['/qrmfg', '/qrmfg/dashboard', '/qrmfg/settings'];
+  const accessibleScreens = ['/qrmfg', '/qrmfg/dashboard', '/qrmfg/analytics', '/qrmfg/qr-analytics', '/qrmfg/settings'];
 
   if (isJvcUser()) {
     accessibleScreens.push('/qrmfg/jvc', '/qrmfg/workflows');

@@ -2,7 +2,8 @@ package com.cqs.qrmfg.model;
 
 public enum QueryStatus {
     OPEN("Open", "Query is waiting for resolution"),
-    RESOLVED("Resolved", "Query has been answered and resolved");
+    RESOLVED("Resolved", "Query has been answered and resolved"),
+    CLOSED("Closed", "Query has been closed without resolution");
 
     private final String displayName;
     private final String description;
@@ -22,5 +23,14 @@ public enum QueryStatus {
 
     public boolean isResolved() {
         return this == RESOLVED;
+    }
+
+    public boolean isActive() {
+        return this == OPEN;
+    }
+
+    public boolean allowsPlantEditing() {
+        // Plant can edit form even when queries are open
+        return this != CLOSED;
     }
 }

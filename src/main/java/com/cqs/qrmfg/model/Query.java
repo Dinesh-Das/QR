@@ -144,7 +144,7 @@ public class Query {
     }
 
     public boolean isOverdue() {
-        return status == QueryStatus.OPEN && getDaysOpen() > 3; // Business rule: overdue after 3 days
+        return status.isActive() && getDaysOpen() > 3; // Business rule: overdue after 3 days
     }
 
     public boolean isHighPriority() {
