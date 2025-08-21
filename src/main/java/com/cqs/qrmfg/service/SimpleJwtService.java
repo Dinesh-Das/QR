@@ -1,6 +1,7 @@
 package com.cqs.qrmfg.service;
 
 import com.cqs.qrmfg.model.User;
+import com.cqs.qrmfg.enums.RoleType;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -50,13 +51,17 @@ public class SimpleJwtService {
         
         // Role information
         if (user.getPrimaryRoleType() != null) {
-            claims.put("primaryRoleType", user.getPrimaryRoleType().name());
-            claims.put("roleType", user.getPrimaryRoleType().name());
+            claims.put("primaryRoleType", user.getPrimaryRoleType().getRoleName());
+            claims.put("roleType", user.getPrimaryRoleType().getRoleName());
         }
         
-        // All roles
+        // All roles - use the actual role names from RoleType enum, not the role.getName()
         List<String> roleNames = user.getRoles().stream()
-            .map(role -> role.getName())
+            .map(role -> {
+                // Get the RoleType enum and use its roleName
+                RoleType roleType = RoleType.fromRoleName(role.getName());
+                return roleType != null ? roleType.getRoleName() : role.getName();
+            })
             .collect(Collectors.toList());
         claims.put("roles", roleNames);
         claims.put("authorities", roleNames);

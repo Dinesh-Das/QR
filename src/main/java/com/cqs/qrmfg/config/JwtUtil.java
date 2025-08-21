@@ -16,7 +16,7 @@ public class JwtUtil {
     @Value("${jwt.secret:qrmfg-secret-key-for-jwt-token-generation-and-validation}")
     private String secret;
 
-    @Value("${jwt.expiration}")
+    @Value("${jwt.expiration:604800000}")
     private long jwtExpirationInMs;
 
     public String generateToken(User user) {

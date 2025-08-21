@@ -88,7 +88,7 @@ public class RBACConfigurationProperties {
         private boolean methodSecurityEnabled = true;
         
         @NotEmpty(message = "Default role cannot be empty")
-        private String defaultRole = "PLANT_ROLE";
+        private String defaultRole = "PLANT_USER";
         
         private boolean strictRoleValidation = true;
         private boolean plantCodeValidation = true;

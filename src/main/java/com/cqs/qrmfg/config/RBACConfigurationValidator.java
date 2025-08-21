@@ -155,8 +155,9 @@ public class RBACConfigurationValidator {
             throw new IllegalArgumentException("Default role cannot be null or empty");
         }
 
+        // Check against actual role names, not enum names
         Set<String> validRoles = Arrays.stream(RoleType.values())
-                .map(RoleType::name)
+                .map(RoleType::getRoleName)
                 .collect(Collectors.toSet());
 
         if (!validRoles.contains(defaultRole)) {
@@ -170,8 +171,9 @@ public class RBACConfigurationValidator {
      * Validates role session timeout configuration
      */
     private void validateRoleSessionTimeouts(Map<String, Integer> roleSessionTimeouts) {
+        // Check against actual role names, not enum names
         Set<String> validRoles = Arrays.stream(RoleType.values())
-                .map(RoleType::name)
+                .map(RoleType::getRoleName)
                 .collect(Collectors.toSet());
 
         for (Map.Entry<String, Integer> entry : roleSessionTimeouts.entrySet()) {
@@ -198,8 +200,9 @@ public class RBACConfigurationValidator {
      * Validates max concurrent sessions configuration
      */
     private void validateMaxConcurrentSessions(Map<String, Integer> maxConcurrentSessions) {
+        // Check against actual role names, not enum names
         Set<String> validRoles = Arrays.stream(RoleType.values())
-                .map(RoleType::name)
+                .map(RoleType::getRoleName)
                 .collect(Collectors.toSet());
 
         for (Map.Entry<String, Integer> entry : maxConcurrentSessions.entrySet()) {
@@ -226,8 +229,9 @@ public class RBACConfigurationValidator {
      * Validates role URL patterns configuration
      */
     private void validateRoleUrlPatterns(Map<String, List<String>> roleUrlPatterns) {
+        // Check against actual role names, not enum names
         Set<String> validRoles = Arrays.stream(RoleType.values())
-                .map(RoleType::name)
+                .map(RoleType::getRoleName)
                 .collect(Collectors.toSet());
 
         for (Map.Entry<String, List<String>> entry : roleUrlPatterns.entrySet()) {

@@ -252,7 +252,10 @@ public final class RBACConstants {
         return dataType != null && (
             dataType.toLowerCase().contains("jvc") ||
             dataType.toLowerCase().contains("workflow") ||
-            dataType.toLowerCase().contains("document")
+            dataType.toLowerCase().contains("document") ||
+            dataType.toLowerCase().contains("query") ||
+            dataType.toLowerCase().contains("project") ||
+            dataType.toLowerCase().contains("analytics")
         );
     }
     
@@ -262,7 +265,8 @@ public final class RBACConstants {
             dataType.toLowerCase().contains("quality") ||
             dataType.toLowerCase().contains("query") ||
             dataType.toLowerCase().contains("workflow") ||
-            dataType.toLowerCase().contains("document")
+            dataType.toLowerCase().contains("document") ||
+            dataType.toLowerCase().contains("analytics")
         );
     }
     
@@ -272,7 +276,8 @@ public final class RBACConstants {
             dataType.toLowerCase().contains("system") ||
             dataType.toLowerCase().contains("config") ||
             dataType.toLowerCase().contains("audit") ||
-            dataType.toLowerCase().contains("workflow")
+            dataType.toLowerCase().contains("workflow") ||
+            dataType.toLowerCase().contains("analytics")
         );
     }
     
@@ -282,7 +287,8 @@ public final class RBACConstants {
             dataType.toLowerCase().contains("operation") ||
             dataType.toLowerCase().contains("workflow") ||
             dataType.toLowerCase().contains("document") ||
-            dataType.toLowerCase().contains("query")
+            dataType.toLowerCase().contains("query") ||
+            dataType.toLowerCase().contains("analytics")
         );
     }
 }
