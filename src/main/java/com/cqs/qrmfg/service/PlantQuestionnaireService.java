@@ -32,6 +32,9 @@ public class PlantQuestionnaireService {
     
     @Autowired
     private ObjectMapper objectMapper;
+    
+    @Autowired
+    private CqsIntegrationService cqsIntegrationService;
 
     @Transactional
     public void initializePlantQuestionnaire(Workflow workflow, String plantCode) {
@@ -218,37 +221,11 @@ public class PlantQuestionnaireService {
     }
     
     /**
-     * Get CQS auto-populated data (mock implementation - replace with actual CQS integration)
+     * Get CQS auto-populated data from QRMFG_AUTO_CQS table
      */
     public CqsDataDto getCqsData(String materialCode, String plantCode) {
         try {
-            // Mock CQS data - replace with actual CQS service call
-            Map<String, Object> cqsData = new HashMap<>();
-            
-            // Basic Information - CQS auto-populated fields
-            cqsData.put("materialName", "Pending IMP");
-            cqsData.put("materialType", "Pending IMP");
-            cqsData.put("casNumber", "Pending IMP");
-            
-            // Physical Properties - CQS auto-populated fields
-            cqsData.put("physicalState", "Pending IMP");
-            cqsData.put("boilingPoint", "Pending IMP");
-            cqsData.put("meltingPoint", "Pending IMP");
-            
-            // Hazard Classification - CQS auto-populated fields
-            cqsData.put("hazardCategories", "Pending IMP");
-            cqsData.put("signalWord", "Pending IMP");
-            cqsData.put("hazardStatements", "Pending IMP");
-            
-            CqsDataDto cqsDto = new CqsDataDto(materialCode, plantCode, cqsData);
-            cqsDto.setSyncStatus("PENDING_IMP");
-            cqsDto.setSyncMessage("CQS integration pending implementation");
-            cqsDto.setTotalFields(cqsData.size());
-            cqsDto.setPopulatedFields(0); // None populated yet
-            cqsDto.setCompletionPercentage(0.0);
-            
-            return cqsDto;
-            
+            return cqsIntegrationService.getCqsData(materialCode, plantCode);
         } catch (Exception e) {
             throw new RuntimeException("Failed to load CQS data: " + e.getMessage(), e);
         }

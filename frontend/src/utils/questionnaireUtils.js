@@ -105,26 +105,25 @@ export const getDefaultQuestionnaireTemplate = () => [
 ];
 
 /**
- * Calculate correct field counts excluding CQS auto-populated fields
+ * Calculate correct field counts including ALL fields (both CQS and plant fields)
  * @param {Object} plantInputs - The plant input data
  * @param {Array} template - Optional template, uses default if not provided
- * @returns {Object} - { totalUserEditableFields, completedUserEditableFields, completionPercentage }
+ * @returns {Object} - { totalFields, completedFields, completionPercentage }
  */
 export const calculateCorrectFieldCounts = (plantInputs = {}, template = null) => {
   const questionnaireTemplate = template || getDefaultQuestionnaireTemplate();
   
-  let totalUserEditableFields = 0;
-  let completedUserEditableFields = 0;
+  let totalFields = 0;
+  let completedFields = 0;
 
   questionnaireTemplate.forEach(step => {
     const stepFields = step.fields || [];
     
-    // Filter out CQS auto-populated fields
-    const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
-    totalUserEditableFields += userEditableFields.length;
+    // Count ALL fields (both CQS and plant fields)
+    totalFields += stepFields.length;
 
-    // Count completed user-editable fields
-    const completedFields = userEditableFields.filter(field => {
+    // Count completed fields (any field with a value)
+    const completedStepFields = stepFields.filter(field => {
       const value = plantInputs[field.name];
       if (Array.isArray(value)) {
         return value.length > 0;
@@ -132,17 +131,20 @@ export const calculateCorrectFieldCounts = (plantInputs = {}, template = null) =
       return value && value !== '' && value !== null && value !== undefined;
     });
 
-    completedUserEditableFields += completedFields.length;
+    completedFields += completedStepFields.length;
   });
 
-  const completionPercentage = totalUserEditableFields > 0 
-    ? Math.round((completedUserEditableFields / totalUserEditableFields) * 100) 
+  const completionPercentage = totalFields > 0 
+    ? Math.round((completedFields / totalFields) * 100) 
     : 0;
 
   return {
-    totalUserEditableFields,
-    completedUserEditableFields,
-    completionPercentage
+    totalFields,
+    completedFields,
+    completionPercentage,
+    // Keep backward compatibility
+    totalUserEditableFields: totalFields,
+    completedUserEditableFields: completedFields
   };
 };
 
@@ -172,9 +174,9 @@ export const getTemplateFieldCounts = (template = null) => {
   });
 
   return {
-    totalFields,
-    totalUserEditableFields,
-    totalCqsFields
+    totalFields, // 87 total fields
+    totalUserEditableFields, // 53 plant fields
+    totalCqsFields // 34 CQS fields
   };
 };
 
@@ -187,29 +189,29 @@ export const getTemplateFieldCounts = (template = null) => {
 export const recalculateWorkflowProgress = (workflow, plantInputs = null) => {
   // If we have plant inputs, calculate based on actual data
   if (plantInputs) {
-    const { totalUserEditableFields, completedUserEditableFields, completionPercentage } = 
+    const { totalFields, completedFields, completionPercentage } = 
       calculateCorrectFieldCounts(plantInputs);
     
     return {
       ...workflow,
-      totalFields: totalUserEditableFields,
-      completedFields: completedUserEditableFields,
+      totalFields,
+      completedFields,
       completionPercentage
     };
   }
 
   // Otherwise, just fix the total field count and recalculate percentage
-  const { totalUserEditableFields } = getTemplateFieldCounts();
+  const { totalFields } = getTemplateFieldCounts();
   
   // Assume the backend's completed count is correct but total is wrong
   const backendCompletedFields = workflow.completedFields || 0;
-  const correctedCompletionPercentage = totalUserEditableFields > 0 
-    ? Math.round((backendCompletedFields / totalUserEditableFields) * 100) 
+  const correctedCompletionPercentage = totalFields > 0 
+    ? Math.round((backendCompletedFields / totalFields) * 100) 
     : 0;
 
   return {
     ...workflow,
-    totalFields: totalUserEditableFields,
+    totalFields, // Now uses 87 total fields instead of 53
     completionPercentage: correctedCompletionPercentage
   };
 };

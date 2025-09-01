@@ -30,6 +30,9 @@ public class QuestionnaireController {
     @Autowired
     private com.cqs.qrmfg.service.WorkflowService workflowService;
     
+    @Autowired
+    private com.cqs.qrmfg.service.CqsIntegrationService cqsIntegrationService;
+    
     /**
      * Test endpoint to verify controller is working
      */
@@ -138,6 +141,14 @@ public class QuestionnaireController {
                 completionStatus.put("submittedBy", null);
             }
             response.put("completionStatus", completionStatus);
+            
+            // Add CQS field mapping for frontend
+            response.put("cqsFieldMapping", cqsIntegrationService.getCqsFieldMapping());
+            
+            // Add export links
+            Map<String, String> exportLinks = new HashMap<>();
+            exportLinks.put("excel", "/api/v1/cqs-export/" + workflowId + "/excel");
+            response.put("exportLinks", exportLinks);
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {

@@ -129,7 +129,7 @@ export const usePlantWorkflows = (currentPlant, userPlantData) => {
           console.log('Fallback: Loaded plant workflows:', plantWorkflows);
 
           // Add mock progress data to plant workflows and filter by current plant
-          const { totalUserEditableFields } = getTemplateFieldCounts();
+          const { totalFields } = getTemplateFieldCounts();
           
           workflowsWithProgress = plantWorkflows
             .filter(workflow => {
@@ -161,7 +161,7 @@ export const usePlantWorkflows = (currentPlant, userPlantData) => {
                 currentState: workflow.currentState || workflow.state,
                 completionStatus,
                 completionPercentage,
-                totalFields: totalUserEditableFields, // Correct total user-editable fields
+                totalFields, // Correct total fields (87 = 34 CQS + 53 plant)
                 completedFields,
                 requiredFields: 50, // Default required
                 completedRequiredFields: 0, // Default completed required

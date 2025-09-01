@@ -34,6 +34,10 @@ public class CqsDataDto {
     public Map<String, Object> getData() { return data; }
     public void setData(Map<String, Object> data) { this.data = data; }
     
+    // Alias for backward compatibility
+    public Map<String, Object> getCqsData() { return data; }
+    public void setCqsData(Map<String, Object> data) { this.data = data; }
+    
     public String getSyncStatus() { return syncStatus; }
     public void setSyncStatus(String syncStatus) { this.syncStatus = syncStatus; }
     

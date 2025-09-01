@@ -421,6 +421,13 @@ export const workflowAPI = {
       `/plant-questionnaire/cqs-data?materialCode=${encodeURIComponent(materialCode)}&plantCode=${encodeURIComponent(plantCode)}`
     ),
 
+  // New unified questionnaire endpoint
+  getQuestionnaireData: (workflowId) =>
+    apiClient.get(`/api/v1/questionnaire/${workflowId}`),
+
+  getQuestionnaireForEdit: (workflowId) =>
+    apiClient.get(`/api/v1/questionnaire/${workflowId}/edit`),
+
   getPlantSpecificData: ({ plantCode, materialCode }) =>
     apiClient.get(
       `/plant-questionnaire/plant-data?plantCode=${encodeURIComponent(plantCode)}&materialCode=${encodeURIComponent(materialCode)}`

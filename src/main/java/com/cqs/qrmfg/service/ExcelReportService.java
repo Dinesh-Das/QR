@@ -5,6 +5,7 @@ import com.cqs.qrmfg.model.PlantSpecificData;
 import com.cqs.qrmfg.model.Workflow;
 import com.cqs.qrmfg.repository.QuestionTemplateRepository;
 import com.cqs.qrmfg.repository.PlantSpecificDataRepository;
+import com.cqs.qrmfg.dto.CqsDataDto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.poi.ss.usermodel.*;
@@ -27,6 +28,9 @@ public class ExcelReportService {
 
     @Autowired
     private PlantSpecificDataRepository plantSpecificDataRepository;
+    
+    @Autowired
+    private CqsIntegrationService cqsIntegrationService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -114,21 +118,32 @@ public class ExcelReportService {
 
         // Parse plant data to get answers
         Map<String, String> answerMap = new HashMap<>();
+        Map<String, String> dataSourceMap = new HashMap<>(); // Track data source for each field
         String lastModifiedBy = "";
         String lastModifiedDate = "";
         
+        // First, get CQS auto-populated data
+        try {
+            CqsDataDto cqsData = cqsIntegrationService.getCqsData(workflow.getMaterialCode(), workflow.getPlantCode());
+            if (cqsData != null && cqsData.getCqsData() != null) {
+                for (Map.Entry<String, Object> entry : cqsData.getCqsData().entrySet()) {
+                    if (entry.getValue() != null) {
+                        answerMap.put(entry.getKey(), entry.getValue().toString());
+                        dataSourceMap.put(entry.getKey(), "CQS Auto-filled");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading CQS data: " + e.getMessage());
+        }
+        
+        // Then, parse plant data to get plant inputs (these override CQS where applicable)
         for (PlantSpecificData plantData : plantDataList) {
             try {
-                // Parse CQS inputs
-                if (plantData.getCqsInputs() != null && !plantData.getCqsInputs().trim().isEmpty()) {
-                    JsonNode cqsNode = objectMapper.readTree(plantData.getCqsInputs());
-                    extractAnswersFromJson(cqsNode, answerMap, "CQS");
-                }
-                
-                // Parse plant inputs
+                // Parse plant inputs (these take precedence over CQS for plant-fillable fields)
                 if (plantData.getPlantInputs() != null && !plantData.getPlantInputs().trim().isEmpty()) {
                     JsonNode plantNode = objectMapper.readTree(plantData.getPlantInputs());
-                    extractAnswersFromJson(plantNode, answerMap, "Plant");
+                    extractAnswersFromJson(plantNode, answerMap, "Plant", dataSourceMap);
                 }
                 
                 // Get modification info
@@ -183,11 +198,11 @@ public class ExcelReportService {
                 
                 // Look for answer using field name
                 String answerValue = answerMap.get(question.getFieldName());
-                String dataSource = "";
+                String dataSource = dataSourceMap.getOrDefault(question.getFieldName(), "");
                 boolean isAnswered = answerValue != null && !answerValue.trim().isEmpty();
                 
-                if (isAnswered) {
-                    // Determine data source based on responsible team
+                if (isAnswered && dataSource.isEmpty()) {
+                    // Fallback: Determine data source based on responsible team if not already set
                     if ("CQS".equalsIgnoreCase(question.getResponsible())) {
                         dataSource = "CQS Auto-filled";
                     } else if (question.isForPlant()) {
@@ -250,24 +265,34 @@ public class ExcelReportService {
     }
 
     private void extractAnswersFromJson(JsonNode jsonNode, Map<String, String> answerMap, String source) {
+        extractAnswersFromJson(jsonNode, answerMap, source, new HashMap<>());
+    }
+    
+    private void extractAnswersFromJson(JsonNode jsonNode, Map<String, String> answerMap, String source, Map<String, String> dataSourceMap) {
         if (jsonNode.isObject()) {
             jsonNode.fields().forEachRemaining(entry -> {
                 String key = entry.getKey();
                 JsonNode value = entry.getValue();
                 
+                String stringValue = null;
                 if (value.isTextual()) {
-                    answerMap.put(key, value.asText());
+                    stringValue = value.asText();
                 } else if (value.isNumber()) {
-                    answerMap.put(key, value.asText());
+                    stringValue = value.asText();
                 } else if (value.isBoolean()) {
-                    answerMap.put(key, value.asBoolean() ? "Yes" : "No");
+                    stringValue = value.asBoolean() ? "Yes" : "No";
                 } else if (value.isArray()) {
                     StringBuilder arrayValue = new StringBuilder();
                     for (JsonNode arrayItem : value) {
                         if (arrayValue.length() > 0) arrayValue.append(", ");
                         arrayValue.append(arrayItem.asText());
                     }
-                    answerMap.put(key, arrayValue.toString());
+                    stringValue = arrayValue.toString();
+                }
+                
+                if (stringValue != null && !stringValue.trim().isEmpty()) {
+                    answerMap.put(key, stringValue);
+                    dataSourceMap.put(key, source + " Input");
                 }
             });
         }
@@ -293,12 +318,24 @@ public class ExcelReportService {
 
         // Parse answers to count completion
         Map<String, String> answerMap = new HashMap<>();
+        
+        // First, get CQS auto-populated data
+        try {
+            CqsDataDto cqsData = cqsIntegrationService.getCqsData(workflow.getMaterialCode(), workflow.getPlantCode());
+            if (cqsData != null && cqsData.getCqsData() != null) {
+                for (Map.Entry<String, Object> entry : cqsData.getCqsData().entrySet()) {
+                    if (entry.getValue() != null) {
+                        answerMap.put(entry.getKey(), entry.getValue().toString());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading CQS data: " + e.getMessage());
+        }
+        
+        // Then, parse plant data
         for (PlantSpecificData plantData : plantDataList) {
             try {
-                if (plantData.getCqsInputs() != null && !plantData.getCqsInputs().trim().isEmpty()) {
-                    JsonNode cqsNode = objectMapper.readTree(plantData.getCqsInputs());
-                    extractAnswersFromJson(cqsNode, answerMap, "CQS");
-                }
                 if (plantData.getPlantInputs() != null && !plantData.getPlantInputs().trim().isEmpty()) {
                     JsonNode plantNode = objectMapper.readTree(plantData.getPlantInputs());
                     extractAnswersFromJson(plantNode, answerMap, "Plant");
@@ -405,12 +442,24 @@ public class ExcelReportService {
 
         // Parse answers
         Map<String, String> answerMap = new HashMap<>();
+        
+        // First, get CQS auto-populated data
+        try {
+            CqsDataDto cqsData = cqsIntegrationService.getCqsData(workflow.getMaterialCode(), workflow.getPlantCode());
+            if (cqsData != null && cqsData.getCqsData() != null) {
+                for (Map.Entry<String, Object> entry : cqsData.getCqsData().entrySet()) {
+                    if (entry.getValue() != null) {
+                        answerMap.put(entry.getKey(), entry.getValue().toString());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading CQS data: " + e.getMessage());
+        }
+        
+        // Then, parse plant data
         for (PlantSpecificData plantData : plantDataList) {
             try {
-                if (plantData.getCqsInputs() != null && !plantData.getCqsInputs().trim().isEmpty()) {
-                    JsonNode cqsNode = objectMapper.readTree(plantData.getCqsInputs());
-                    extractAnswersFromJson(cqsNode, answerMap, "CQS");
-                }
                 if (plantData.getPlantInputs() != null && !plantData.getPlantInputs().trim().isEmpty()) {
                     JsonNode plantNode = objectMapper.readTree(plantData.getPlantInputs());
                     extractAnswersFromJson(plantNode, answerMap, "Plant");

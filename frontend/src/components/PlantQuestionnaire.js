@@ -52,9 +52,11 @@ import { UI_CONFIG, AUTO_SAVE } from '../constants';
 import { queryAPI } from '../services/queryAPI';
 import { workflowAPI } from '../services/workflowAPI';
 
+import { CqsFieldDisplay, CqsDataSummary } from './CqsFieldDisplay';
 import MaterialContextPanel from './MaterialContextPanel';
 import QueryRaisingModal from './QueryRaisingModal';
 import './PlantQuestionnaire.css';
+import './CqsFieldDisplay.css';
 
 // const { Step } = Steps; // Not currently used
 const { TextArea } = Input;
@@ -116,6 +118,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
   const [_cqsData, setCqsData] = useState({}); // Used for CQS auto-population (pending implementation)
   // eslint-disable-next-line no-unused-vars
   const [_plantSpecificData, setPlantSpecificData] = useState({}); // Used for plant-specific data loading
+  const [cqsFormData, setCqsFormData] = useState({}); // Store CQS form data separately
 
   // Step icons mapping for modern UI
   const stepIcons = {
@@ -166,50 +169,80 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
         throw new Error('Invalid template structure received from backend');
       }
 
-      // Process template to include CQS auto-populated fields
+      // Load CQS data first
+      let cqsResponse = {};
+      try {
+        cqsResponse = await workflowAPI.getCqsData({
+          materialCode: workflowData?.materialCode,
+          plantCode: workflowData?.assignedPlant
+        });
+
+        console.log('CQS Response:', cqsResponse);
+        setCqsData(cqsResponse || {});
+      } catch (error) {
+        console.error('Failed to load CQS data:', error);
+        // Continue with empty CQS data
+      }
+
+      // Process template to include CQS auto-populated fields with actual values
       const processedSteps = template.steps.map(step => ({
         ...step,
         title: step.title || step.stepTitle || `Step ${step.stepNumber || 'Unknown'}`,
         description: step.description || '',
-        fields: (step.fields || []).map(field => ({
-          ...field,
-          isCqsAutoPopulated: field.cqsAutoPopulated || field.isCqsAutoPopulated || false,
-          cqsValue: field.cqsAutoPopulated || field.isCqsAutoPopulated ? 'Pending IMP' : null,
-          disabled: field.cqsAutoPopulated || field.isCqsAutoPopulated || field.disabled || false,
-          placeholder:
-            field.cqsAutoPopulated || field.isCqsAutoPopulated
-              ? 'Auto-populated by CQS (Pending Implementation)'
-              : field.placeholder
-        }))
+        fields: (step.fields || []).map(field => {
+          const isCqsField = field.cqsAutoPopulated || field.isCqsAutoPopulated || false;
+          let cqsValue = null;
+
+          // Get actual CQS value for this field
+          if (isCqsField && cqsResponse?.cqsData && cqsResponse.cqsData[field.name]) {
+            cqsValue = cqsResponse.cqsData[field.name];
+          }
+
+          return {
+            ...field,
+            isCqsAutoPopulated: isCqsField,
+            cqsValue,
+            // Only disable if CQS value is available, otherwise allow manual input
+            disabled: isCqsField && cqsValue !== null && cqsValue !== undefined,
+            placeholder: isCqsField && cqsValue
+              ? `Auto-populated by CQS: ${cqsValue}`
+              : isCqsField
+                ? 'CQS data not available - manual input required'
+                : field.placeholder
+          };
+        })
       }));
 
       console.log('Processed steps:', processedSteps);
       setQuestionnaireSteps(processedSteps);
 
-      // Load CQS data if available
-      try {
-        const cqsResponse = await workflowAPI.getCqsData({
-          materialCode: workflowData?.materialCode,
-          plantCode: workflowData?.assignedPlant
-        });
-
-        setCqsData(cqsResponse.data || {});
-
-        // Update form with CQS data
-        const cqsFormData = {};
-        Object.entries(cqsResponse.data || {}).forEach(([key, value]) => {
-          if (value && value !== 'Pending IMP') {
-            cqsFormData[key] = value;
+      // Update form with CQS data - auto-populate CQS fields
+      const extractedCqsFormData = {};
+      if (cqsResponse?.cqsData) {
+        Object.entries(cqsResponse.cqsData).forEach(([key, value]) => {
+          if (value !== null && value !== undefined && value !== '') {
+            // Find the field to check if it's CQS auto-populated
+            const field = processedSteps.flatMap(step => step.fields || [])
+              .find(f => f.name === key);
+            if (field && (field.cqsAutoPopulated || field.isCqsAutoPopulated)) {
+              extractedCqsFormData[key] = value;
+            }
           }
         });
+      }
 
-        if (Object.keys(cqsFormData).length > 0) {
-          setFormData(prev => ({ ...prev, ...cqsFormData }));
-          form.setFieldsValue(cqsFormData);
-        }
-      } catch (error) {
-        console.error('Failed to load CQS data:', error);
-        // Don't show error message as CQS data might not be available yet
+      // Store CQS form data in state for later use
+      setCqsFormData(extractedCqsFormData);
+
+      if (Object.keys(extractedCqsFormData).length > 0) {
+        console.log('Setting CQS form data:', extractedCqsFormData);
+        setFormData(prev => ({ ...prev, ...extractedCqsFormData }));
+        form.setFieldsValue(extractedCqsFormData);
+
+        // Debug: Log current form values after setting CQS data
+        setTimeout(() => {
+          console.log('Form values after CQS set:', form.getFieldsValue());
+        }, 100);
       }
 
       // Load plant-specific data
@@ -222,13 +255,21 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
         setPlantSpecificData(plantData || {});
 
-        // If plant data exists, populate form with existing plant inputs
+        // If plant data exists, merge with CQS data (CQS takes precedence)
         if (plantData?.plantInputs) {
-          setFormData(prev => ({ ...prev, ...plantData.plantInputs }));
-          form.setFieldsValue(plantData.plantInputs);
+          const mergedFormData = { ...plantData.plantInputs, ...extractedCqsFormData };
+          setFormData(prev => ({ ...prev, ...mergedFormData }));
+          form.setFieldsValue(mergedFormData);
+        } else if (Object.keys(extractedCqsFormData).length > 0) {
+          // If no plant data but CQS data exists, ensure CQS data is set
+          form.setFieldsValue(extractedCqsFormData);
         }
       } catch (error) {
         console.error('Failed to load plant-specific data:', error);
+        // If plant data loading fails, ensure CQS data is still set
+        if (Object.keys(extractedCqsFormData).length > 0) {
+          form.setFieldsValue(extractedCqsFormData);
+        }
       }
     } catch (error) {
       console.error('Failed to load questionnaire template:', error);
@@ -361,9 +402,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           type: 'radio',
           required: false,
           isCqsAutoPopulated: true,
-          disabled: true,
-          cqsValue: 'Pending IMP',
-          placeholder: 'Auto-populated by CQS (Pending Implementation)',
           options: [
             { value: 'yes', label: 'Yes' },
             { value: 'no', label: 'No' }
@@ -387,9 +425,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           type: 'radio',
           required: false,
           isCqsAutoPopulated: true,
-          disabled: true,
-          cqsValue: 'Pending IMP',
-          placeholder: 'Auto-populated by CQS (Pending Implementation)',
           options: [
             { value: 'yes', label: 'Yes' },
             { value: 'no', label: 'No' }
@@ -454,9 +489,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           type: 'radio',
           required: false,
           isCqsAutoPopulated: true,
-          disabled: true,
-          cqsValue: 'Pending IMP',
-          placeholder: 'Auto-populated by CQS (Pending Implementation)',
           options: [
             { value: 'yes', label: 'Yes' },
             { value: 'no', label: 'No' },
@@ -470,9 +502,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           type: 'select',
           required: false,
           isCqsAutoPopulated: true,
-          disabled: true,
-          cqsValue: 'Pending IMP',
-          placeholder: 'Auto-populated by CQS (Pending Implementation)',
           options: [
             { value: 'class_a', label: 'Class A' },
             { value: 'class_b', label: 'Class B' },
@@ -504,9 +533,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           type: 'radio',
           required: false,
           isCqsAutoPopulated: true,
-          disabled: true,
-          cqsValue: 'Pending IMP',
-          placeholder: 'Auto-populated by CQS (Pending Implementation)',
           options: [
             { value: 'yes', label: 'Yes' },
             { value: 'no', label: 'No' },
@@ -538,9 +564,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           type: 'radio',
           required: false,
           isCqsAutoPopulated: true,
-          disabled: true,
-          cqsValue: 'Pending IMP',
-          placeholder: 'Auto-populated by CQS (Pending Implementation)',
           options: [
             { value: 'yes', label: 'Yes' },
             { value: 'no', label: 'No' },
@@ -553,9 +576,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           type: 'radio',
           required: false,
           isCqsAutoPopulated: true,
-          disabled: true,
-          cqsValue: 'Pending IMP',
-          placeholder: 'Auto-populated by CQS (Pending Implementation)',
           options: [
             { value: 'yes', label: 'Yes' },
             { value: 'no', label: 'No' },
@@ -568,9 +588,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           type: 'radio',
           required: false,
           isCqsAutoPopulated: true,
-          disabled: true,
-          cqsValue: 'Pending IMP',
-          placeholder: 'Auto-populated by CQS (Pending Implementation)',
           options: [
             { value: 'yes', label: 'Yes' },
             { value: 'no', label: 'No' },
@@ -591,9 +608,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           type: 'radio',
           required: false,
           isCqsAutoPopulated: true,
-          disabled: true,
-          cqsValue: 'Pending IMP',
-          placeholder: 'Auto-populated by CQS (Pending Implementation)',
           options: [
             { value: 'yes', label: 'Yes' },
             { value: 'no', label: 'No' },
@@ -667,10 +681,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           label: 'Recommended specific PPEs based on MSDS',
           type: 'textarea',
           required: false,
-          isCqsAutoPopulated: true,
-          disabled: true,
-          cqsValue: 'Pending IMP',
-          placeholder: 'Auto-populated by CQS (Pending Implementation)'
+          isCqsAutoPopulated: true
         },
         {
           name: 'ppe_in_use',
@@ -703,9 +714,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           type: 'radio',
           required: false,
           isCqsAutoPopulated: true,
-          disabled: true,
-          cqsValue: 'Pending IMP',
-          placeholder: 'Auto-populated by CQS (Pending Implementation)',
           options: [
             { value: 'yes', label: 'Yes' },
             { value: 'no', label: 'No' }
@@ -718,9 +726,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           type: 'radio',
           required: false,
           isCqsAutoPopulated: true,
-          disabled: true,
-          cqsValue: 'Pending IMP',
-          placeholder: 'Auto-populated by CQS (Pending Implementation)',
           options: [
             { value: 'yes', label: 'Yes' },
             { value: 'no', label: 'No' },
@@ -769,9 +774,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           type: 'radio',
           required: false,
           isCqsAutoPopulated: true,
-          disabled: true,
-          cqsValue: 'Pending IMP',
-          placeholder: 'Auto-populated by CQS (Pending Implementation)',
           options: [
             { value: 'yes', label: 'Yes' },
             { value: 'no', label: 'No' }
@@ -783,9 +785,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           type: 'radio',
           required: false,
           isCqsAutoPopulated: true,
-          disabled: true,
-          cqsValue: 'Pending IMP',
-          placeholder: 'Auto-populated by CQS (Pending Implementation)',
           options: [
             { value: 'yes', label: 'Yes' },
             { value: 'no', label: 'No' }
@@ -797,9 +796,6 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           type: 'radio',
           required: false,
           isCqsAutoPopulated: true,
-          disabled: true,
-          cqsValue: 'Pending IMP',
-          placeholder: 'Auto-populated by CQS (Pending Implementation)',
           options: [
             { value: 'yes', label: 'Yes' },
             { value: 'no', label: 'No' }
@@ -879,12 +875,11 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
       questionnaireSteps.forEach((step, _index) => {
         const stepFields = step.fields || [];
-        
-        // Filter out CQS auto-populated fields from total count
-        const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
-        totalFields += userEditableFields.length;
 
-        const completedStepFields = userEditableFields.filter(field => {
+        // Count ALL fields (both CQS and plant fields) in total
+        totalFields += stepFields.length;
+
+        const completedStepFields = stepFields.filter(field => {
           const value = currentData[field.name];
           if (Array.isArray(value)) {
             return value.length > 0;
@@ -897,7 +892,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
       const percentage = totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
 
-      // Overall completion calculated (excluding CQS auto-populated fields)
+      // Overall completion calculated (including both CQS and plant fields)
 
       return percentage;
     } catch (error) {
@@ -1002,10 +997,10 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
         const currentValues = form.getFieldsValue();
         const updatedFormData = { ...formData, ...currentValues };
         setFormData(updatedFormData);
-        
+
         // Save to database
         await handleSaveDraft(true); // Silent save
-        
+
         setCurrentStep(currentStep + 1);
       } catch (error) {
         console.error('Failed to save data before moving to next step:', error);
@@ -1021,10 +1016,10 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
         const currentValues = form.getFieldsValue();
         const updatedFormData = { ...formData, ...currentValues };
         setFormData(updatedFormData);
-        
+
         // Save to database
         await handleSaveDraft(true); // Silent save
-        
+
         setCurrentStep(currentStep - 1);
       } catch (error) {
         console.error('Failed to save data before moving to previous step:', error);
@@ -1041,10 +1036,10 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           const currentValues = form.getFieldsValue();
           const updatedFormData = { ...formData, ...currentValues };
           setFormData(updatedFormData);
-          
+
           // Save to database
           await handleSaveDraft(true); // Silent save
-          
+
           setCurrentStep(step);
         } catch (error) {
           console.error('Failed to save data before changing step:', error);
@@ -1082,12 +1077,11 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
       questionnaireSteps.forEach(step => {
         const stepFields = step.fields || [];
-        
-        // Filter out CQS auto-populated fields from total count
-        const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
-        totalFields += userEditableFields.length;
 
-        const populatedStepFields = userEditableFields.filter(field => {
+        // Count ALL fields (both CQS and plant fields) in total
+        totalFields += stepFields.length;
+
+        const populatedStepFields = stepFields.filter(field => {
           const value = currentData[field.name];
           if (Array.isArray(value)) {
             return value.length > 0;
@@ -1098,7 +1092,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
         populatedFields += populatedStepFields.length;
       });
 
-      // Total fields populated calculated (excluding CQS auto-populated fields)
+      // Total fields populated calculated (including both CQS and plant fields)
 
       return { total: totalFields, populated: populatedFields };
     } catch (error) {
@@ -1227,13 +1221,20 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           completed.add(response.stepNumber);
         });
 
-        setFormData(existingData);
+        // Merge with existing form data (which may include CQS values)
+        setFormData(prevFormData => {
+          const mergedData = { ...existingData, ...prevFormData };
+          form.setFieldsValue(mergedData);
+          return mergedData;
+        });
         setCompletedSteps(completed);
-        form.setFieldsValue(existingData);
       } else {
-        // Set initial data even if no responses exist
-        setFormData(initialData);
-        form.setFieldsValue(initialData);
+        // Set initial data even if no responses exist, but preserve existing form data (CQS values)
+        setFormData(prevFormData => {
+          const mergedData = { ...initialData, ...prevFormData };
+          form.setFieldsValue(mergedData);
+          return mergedData;
+        });
       }
     } catch (error) {
       console.error('Failed to load workflow data:', error);
@@ -1289,6 +1290,20 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
     }
   }, [formData, autoSaveEnabled, handleSaveDraft]);
 
+  // Ensure CQS values are always applied to the form
+  useEffect(() => {
+    if (Object.keys(cqsFormData).length > 0) {
+      console.log('Applying CQS form data from useEffect:', cqsFormData);
+      // Get current form values
+      const currentValues = form.getFieldsValue();
+      // Merge with CQS data (CQS takes precedence)
+      const mergedValues = { ...currentValues, ...cqsFormData };
+      // Set the merged values
+      form.setFieldsValue(mergedValues);
+      setFormData(prev => ({ ...prev, ...cqsFormData }));
+    }
+  }, [cqsFormData, form]);
+
   // Track form data changes and update completed steps
   useEffect(() => {
     if (questionnaireSteps.length > 0) {
@@ -1300,7 +1315,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
       questionnaireSteps.forEach((step, index) => {
         const stepFields = step.fields || [];
-        
+
         // Filter out CQS auto-populated fields for step completion calculation
         const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
         const requiredFields = userEditableFields.filter(field => field.required);
@@ -1566,7 +1581,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
     }
 
     const stepFields = questionnaireSteps[stepIndex].fields;
-    
+
     // Filter out CQS auto-populated fields for step completion calculation
     const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
     const requiredFields = userEditableFields.filter(field => field.required);
@@ -1659,6 +1674,8 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
     loadQueries(); // Reload queries
     message.success('Query raised successfully');
   };
+
+
 
   // Auto-scroll to field with resolved query
   const scrollToResolvedQuery = useCallback(fieldName => {
@@ -1806,10 +1823,10 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
     const fieldLabel = (
       <div className="modern-field-label">
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'flex-start', 
-          gap: '8px', 
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '8px',
           flexWrap: 'wrap',
           marginBottom: '4px'
         }}>
@@ -1817,7 +1834,14 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
             {field.label}
           </span>
           {field.required && <span style={{ color: '#ef4444', flexShrink: 0 }}>*</span>}
-          {field.isCqsAutoPopulated && <span className="cqs-badge">CQS</span>}
+          {field.isCqsAutoPopulated && (
+            <CqsFieldDisplay
+              field={field}
+              cqsData={_cqsData}
+              cqsFieldMapping={workflowData?.cqsFieldMapping || {}}
+              compact={true}
+            />
+          )}
           {isFieldCompleted && (
             <Tooltip title="Field completed">
               <CheckCircleOutlined style={{ color: '#10b981', fontSize: '14px', flexShrink: 0 }} />
@@ -1890,9 +1914,38 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
       'data-field-name': field.name
     };
 
+    // Get CQS value for this field if it's CQS auto-populated
+    const cqsValue = field.isCqsAutoPopulated && _cqsData?.cqsData ?
+      _cqsData.cqsData[field.name] : null;
+
+    // If this is a CQS auto-populated field with a value, show it as read-only display
+    if (field.isCqsAutoPopulated && cqsValue) {
+      const displayValue = field.type === 'radio' || field.type === 'select' ?
+        field.options?.find(opt => opt.value === cqsValue)?.label || cqsValue :
+        cqsValue;
+
+      return (
+        <Form.Item {...commonProps}>
+          <div className="cqs-readonly-field">
+            <div className="cqs-value-display">
+              {displayValue}
+            </div>
+            <div className="cqs-readonly-note">
+              <Text type="secondary" style={{ fontSize: '12px', fontStyle: 'italic' }}>
+                Auto-populated by CQS system
+              </Text>
+            </div>
+          </div>
+        </Form.Item>
+      );
+    }
+
+    // Only disable if field is explicitly disabled, not just because it's CQS auto-populated
+    const isDisabled = field.disabled || false;
+
     const inputProps = {
-      className: 'modern-input',
-      disabled: field.disabled || field.isCqsAutoPopulated,
+      className: `modern-input ${field.isCqsAutoPopulated ? 'cqs-auto-populated' : ''}`,
+      disabled: isDisabled,
       placeholder: field.placeholder || `Enter ${field.label.toLowerCase()}`
     };
 
@@ -1933,8 +1986,8 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
         return (
           <Form.Item {...commonProps}>
             <Radio.Group
-              className="modern-radio-group"
-              disabled={field.disabled || field.isCqsAutoPopulated}
+              className={`modern-radio-group ${field.isCqsAutoPopulated ? 'cqs-auto-populated' : ''}`}
+              disabled={isDisabled}
             >
               <Space direction="vertical" size="small">
                 {field.options?.map(option => (
@@ -1951,8 +2004,8 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
         return (
           <Form.Item {...commonProps} valuePropName="checked">
             <Checkbox.Group
-              className="modern-checkbox-group"
-              disabled={field.disabled || field.isCqsAutoPopulated}
+              className={`modern-checkbox-group ${field.isCqsAutoPopulated ? 'cqs-auto-populated' : ''}`}
+              disabled={isDisabled}
             >
               <Space direction="vertical" size="small">
                 {field.options?.map(option => (
@@ -2425,6 +2478,8 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
               />
             )}
 
+
+
             <div
               className={`modern-form-content ${currentStep % 2 === 0 ? 'slide-in-from-right' : 'slide-in-from-left'}`}
             >
@@ -2443,7 +2498,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
                       questionnaireSteps.forEach((step, index) => {
                         const stepFields = step.fields || [];
-                        
+
                         // Filter out CQS auto-populated fields for step completion calculation
                         const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
                         const requiredFields = userEditableFields.filter(field => field.required);
@@ -2569,6 +2624,8 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
                     Unsaved changes
                   </div>
                 )}
+
+
 
                 {currentStep === questionnaireSteps.length - 1 ? (
                   <Button

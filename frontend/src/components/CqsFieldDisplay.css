@@ -1,0 +1,279 @@
+/* CQS Field Display Styles */
+
+.cqs-field-card {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.cqs-field-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cqs-field-card.populated {
+  border-left: 4px solid #52c41a;
+  background: linear-gradient(90deg, #f6ffed 0%, #ffffff 100%);
+}
+
+.cqs-field-card.pending {
+  border-left: 4px solid #faad14;
+  background: linear-gradient(90deg, #fffbe6 0%, #ffffff 100%);
+}
+
+.cqs-field-card.plant-input {
+  border-left: 4px solid #1890ff;
+  background: linear-gradient(90deg, #e6f7ff 0%, #ffffff 100%);
+}
+
+/* CQS Status Tags */
+.ant-tag.cqs-status {
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+/* CQS Summary Cards */
+.cqs-summary-card .ant-card-head {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.cqs-summary-card .ant-card-head-title {
+  color: white;
+}
+
+/* Progress Bar Customization */
+.cqs-progress .ant-progress-text {
+  font-weight: 600;
+}
+
+/* Field Value Display */
+.cqs-field-value {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  background: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.cqs-field-value.populated {
+  background: #f6ffed;
+  color: #389e0d;
+  border: 1px solid #b7eb8f;
+}
+
+.cqs-field-value.pending {
+  background: #fffbe6;
+  color: #d48806;
+  border: 1px solid #ffe58f;
+  font-style: italic;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .cqs-field-card {
+    margin-bottom: 12px;
+  }
+  
+  .cqs-field-card .ant-row {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+  
+  .cqs-field-card .ant-col:last-child {
+    margin-top: 8px;
+    align-self: flex-start;
+  }
+}
+
+/* Export Button Styles */
+.cqs-export-button {
+  background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+  border: none;
+  box-shadow: 0 2px 4px rgba(82, 196, 26, 0.3);
+}
+
+.cqs-export-button:hover {
+  background: linear-gradient(135deg, #73d13d 0%, #52c41a 100%);
+  box-shadow: 0 4px 8px rgba(82, 196, 26, 0.4);
+  transform: translateY(-1px);
+}
+
+/* CQS Integration Status */
+.cqs-integration-status {
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.cqs-integration-status.active {
+  background: linear-gradient(135deg, #f6ffed 0%, #ffffff 100%);
+  border: 1px solid #b7eb8f;
+}
+
+.cqs-integration-status.pending {
+  background: linear-gradient(135deg, #fffbe6 0%, #ffffff 100%);
+  border: 1px solid #ffe58f;
+}
+
+.cqs-integration-status.error {
+  background: linear-gradient(135deg, #fff2f0 0%, #ffffff 100%);
+  border: 1px solid #ffccc7;
+}
+
+/* Field Mapping Display */
+.cqs-field-mapping {
+  font-size: 11px;
+  color: #8c8c8c;
+  margin-top: 4px;
+}
+
+.cqs-field-mapping::before {
+  content: "→ ";
+  color: #1890ff;
+}
+
+/* Animation for loading states */
+.cqs-loading {
+  animation: cqsPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes cqsPulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Compact mode styles */
+.cqs-field-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.cqs-field-compact.populated {
+  background: #f6ffed;
+  color: #389e0d;
+}
+
+.cqs-field-compact.pending {
+  background: #fffbe6;
+  color: #d48806;
+}
+
+.cqs-field-compact.plant-input {
+  background: #e6f7ff;
+  color: #0958d9;
+}
+
+/* CQS Auto-populated form field styles */
+.cqs-auto-populated {
+  position: relative;
+}
+
+.cqs-auto-populated::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(to bottom, #52c41a, #73d13d);
+  border-radius: 0 2px 2px 0;
+  z-index: 1;
+}
+
+.cqs-auto-populated .ant-input,
+.cqs-auto-populated .ant-select-selector,
+.cqs-auto-populated .ant-radio-group,
+.cqs-auto-populated textarea {
+  background: linear-gradient(90deg, #f6ffed 0%, #ffffff 100%) !important;
+  border-color: #b7eb8f !important;
+}
+
+.cqs-auto-populated .ant-input:focus,
+.cqs-auto-populated .ant-select-selector:focus,
+.cqs-auto-populated textarea:focus {
+  border-color: #52c41a !important;
+  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.2) !important;
+}
+
+.cqs-auto-populated .ant-radio-wrapper {
+  background: transparent;
+}
+
+.cqs-auto-populated .ant-radio-wrapper-checked {
+  background: rgba(82, 196, 26, 0.1);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+/* CQS field indicator */
+.cqs-field-indicator {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #52c41a;
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  z-index: 2;
+}
+
+/* CQS read-only field display */
+.cqs-readonly-field {
+  background: linear-gradient(90deg, #f6ffed 0%, #ffffff 100%);
+  border: 2px solid #b7eb8f;
+  border-radius: 6px;
+  padding: 12px 16px;
+  position: relative;
+}
+
+.cqs-readonly-field::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(to bottom, #52c41a, #73d13d);
+  border-radius: 4px 0 0 4px;
+}
+
+.cqs-value-display {
+  font-size: 16px;
+  font-weight: 600;
+  color: #389e0d;
+  margin-bottom: 4px;
+  text-transform: capitalize;
+}
+
+.cqs-readonly-note {
+  margin-top: 4px;
+}
+
+/* Responsive design for CQS readonly fields */
+@media (max-width: 768px) {
+  .cqs-readonly-field {
+    padding: 10px 12px;
+  }
+  
+  .cqs-value-display {
+    font-size: 14px;
+  }
+}

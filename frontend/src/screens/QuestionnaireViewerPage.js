@@ -75,9 +75,9 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
 
   // Calculate completion metrics at component level for use across tabs
   const plantInputs = questionnaireData?.plantData?.plantInputs || {};
-  const { totalUserEditableFields, completedUserEditableFields, completionPercentage } =
+  const { totalFields, completedFields, completionPercentage } =
     questionnaireData ? calculateCorrectFieldCounts(plantInputs, questionnaireData.template?.steps) :
-      { totalUserEditableFields: 0, completedUserEditableFields: 0, completionPercentage: 0 };
+      { totalFields: 0, completedFields: 0, completionPercentage: 0 };
 
   // Create overview dashboard
   const renderOverviewDashboard = (questionnaireData) => {
@@ -86,13 +86,12 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
     const totalSteps = template?.steps?.length || 0;
     const completedSteps = template?.steps?.filter(step => {
       const stepFields = step.fields || [];
-      // Only count user-editable fields for step completion
-      const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
-      const completedFields = userEditableFields.filter(field => {
+      // Count ALL fields (both CQS and plant fields) for step completion
+      const completedFields = stepFields.filter(field => {
         const value = plantData?.plantInputs?.[field.name] || '';
         return value && value.trim() !== '';
       });
-      return userEditableFields.length > 0 && completedFields.length === userEditableFields.length;
+      return stepFields.length > 0 && completedFields.length === stepFields.length;
     }).length || 0;
 
     const overallProgress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
@@ -145,7 +144,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
             }}>
               <Statistic
                 title={<span style={{ color: 'rgba(255,255,255,0.8)' }}>Total Fields</span>}
-                value={totalUserEditableFields}
+                value={totalFields}
                 valueStyle={{ color: 'white', fontSize: 36, fontWeight: 700 }}
                 prefix={<FileTextOutlined />}
               />
@@ -161,7 +160,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
             }}>
               <Statistic
                 title={<span style={{ color: 'rgba(255,255,255,0.8)' }}>Completed Fields</span>}
-                value={completedUserEditableFields}
+                value={completedFields}
                 valueStyle={{ color: 'white', fontSize: 36, fontWeight: 700 }}
                 prefix={<StarOutlined />}
               />
@@ -182,13 +181,12 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
           <Timeline mode="left">
             {template?.steps?.map((step, index) => {
               const stepFields = step.fields || [];
-              // Only count user-editable fields for step progress
-              const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
-              const completedFields = userEditableFields.filter(field => {
+              // Count ALL fields (both CQS and plant fields) for step progress
+              const completedFields = stepFields.filter(field => {
                 const value = plantData?.plantInputs?.[field.name] || '';
                 return value && value.trim() !== '';
               });
-              const stepProgress = userEditableFields.length > 0 ? Math.round((completedFields.length / userEditableFields.length) * 100) : 0;
+              const stepProgress = stepFields.length > 0 ? Math.round((completedFields.length / stepFields.length) * 100) : 0;
               const isCompleted = stepProgress === 100;
 
               return (
@@ -221,7 +219,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
                         strokeColor={isCompleted ? '#52c41a' : '#1890ff'}
                       />
                       <Text strong style={{ fontSize: 13 }}>
-                        {completedFields.length}/{userEditableFields.length} fields
+                        {completedFields.length}/{stepFields.length} fields
                       </Text>
                     </div>
                   </div>
@@ -408,14 +406,14 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
   };
 
   const renderStepDetails = (step, plantInputs, cqsData) => {
-    // Only count user-editable fields for step details
-    const userEditableFields = step.fields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
-    const completedFields = userEditableFields.filter(field => {
+    // Count ALL fields (both CQS and plant fields) for step details
+    const stepFields = step.fields || [];
+    const completedFields = stepFields.filter(field => {
       const value = plantInputs[field.name] || '';
       return value && value.trim() !== '';
     }).length;
 
-    const completionRate = userEditableFields.length > 0 ? (completedFields / userEditableFields.length) * 100 : 0;
+    const completionRate = stepFields.length > 0 ? (completedFields / stepFields.length) * 100 : 0;
 
     return (
       <div key={step.stepNumber} style={{ marginBottom: 32 }}>
@@ -450,7 +448,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
                   {step.title}
                 </Title>
                 <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>
-                  {completedFields} of {userEditableFields.length} fields completed • {Math.round(completionRate)}% done
+                  {completedFields} of {stepFields.length} fields completed • {Math.round(completionRate)}% done
                 </Text>
               </div>
             </div>
@@ -755,7 +753,7 @@ const QuestionnaireViewerPage = ({ workflowId: propWorkflowId, onClose }) => {
                         <Col span={8}>
                           <Statistic
                             title="Fields Remaining"
-                            value={totalUserEditableFields - completedUserEditableFields}
+                            value={totalFields - completedFields}
                             valueStyle={{ color: '#cf1322' }}
                             prefix={<ClockCircleOutlined />}
                           />
