@@ -27,8 +27,7 @@ const WorkflowTable = React.memo(({
     const colors = {
       DRAFT: 'default',
       IN_PROGRESS: 'processing',
-      COMPLETED: 'success',
-      SUBMITTED: 'success'
+      COMPLETED: 'success'
     };
     return colors[status] || 'default';
   }, []);
@@ -174,8 +173,7 @@ const WorkflowTable = React.memo(({
       filters: [
         { text: 'Draft', value: 'DRAFT' },
         { text: 'In Progress', value: 'IN_PROGRESS' },
-        { text: 'Completed', value: 'COMPLETED' },
-        { text: 'Submitted', value: 'SUBMITTED' }
+        { text: 'Completed', value: 'COMPLETED' }
       ],
       onFilter: (value, record) => record.completionStatus === value,
       render: status => <Tag color={getStatusColor(status)}>{status.replace('_', ' ')}</Tag>
@@ -231,7 +229,7 @@ const WorkflowTable = React.memo(({
             size="small"
             icon={<FormOutlined />}
             onClick={() => handleStartQuestionnaire(record)}
-            disabled={record.isSubmitted}
+            disabled={record.isSubmitted || record.completionStatus === 'COMPLETED'}
           >
             {record.completionPercentage > 0 ? 'Continue' : 'Start'}
           </Button>

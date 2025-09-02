@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Optional;
@@ -235,10 +236,10 @@ public class PlantQuestionnaireController {
     }
 
     /**
-     * Submit plant questionnaire
+     * Submit plant questionnaire with validation
      */
     @PostMapping("/submit")
-    public ResponseEntity<String> submitQuestionnaire(
+    public ResponseEntity<Map<String, Object>> submitQuestionnaire(
             @RequestParam Long workflowId,
             @RequestBody Map<String, Object> submissionData) {
         
@@ -250,32 +251,96 @@ public class PlantQuestionnaireController {
             @SuppressWarnings("unchecked")
             Map<String, Object> responses = (Map<String, Object>) submissionData.get("responses");
             
-            // Save final responses
+            // Save final responses first
             PlantSpecificDataDto plantDataDto = plantQuestionnaireService.getOrCreatePlantSpecificData(
                 plantCode, materialCode, workflowId);
             
             plantDataDto.setPlantInputs(responses);
             plantDataDto.setWorkflowId(workflowId);
             
-            // Calculate final completion stats
-            if (responses != null) {
-                int totalFields = responses.size();
-                int completedFields = (int) responses.values().stream()
-                    .filter(value -> value != null && !value.toString().trim().isEmpty())
-                    .count();
-                
-                plantDataDto.setTotalFields(totalFields);
-                plantDataDto.setCompletedFields(completedFields);
-            }
+            // Recalculate completion stats based on template
+            plantQuestionnaireService.recalculateCompletionStats(materialCode, plantCode);
             
             plantQuestionnaireService.savePlantSpecificData(plantDataDto, submittedBy);
             
-            // Submit the questionnaire
-            plantQuestionnaireService.submitPlantQuestionnaire(plantCode, materialCode, submittedBy);
+            // Submit the questionnaire with validation
+            Map<String, Object> result = plantQuestionnaireService.submitPlantQuestionnaire(plantCode, materialCode, submittedBy);
             
-            return ResponseEntity.ok("Questionnaire submitted successfully");
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Failed to submit questionnaire: " + e.getMessage());
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("success", false);
+            errorResult.put("message", "Failed to submit questionnaire: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResult);
+        }
+    }
+    
+    /**
+     * Validate questionnaire completion
+     */
+    @GetMapping("/validate")
+    public ResponseEntity<Map<String, Object>> validateQuestionnaire(
+            @RequestParam String plantCode,
+            @RequestParam String materialCode) {
+        
+        try {
+            PlantQuestionnaireService.ValidationResult validation = 
+                plantQuestionnaireService.validateQuestionnaireCompletion(plantCode, materialCode);
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("isValid", validation.isValid());
+            result.put("message", validation.getMessage());
+            result.put("missingFields", validation.getMissingFields());
+            result.put("completionPercentage", validation.getCompletionPercentage());
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("isValid", false);
+            errorResult.put("message", "Validation failed: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResult);
+        }
+    }
+    
+    /**
+     * Get questionnaire status (submitted, read-only, etc.)
+     */
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, Object>> getQuestionnaireStatus(
+            @RequestParam String plantCode,
+            @RequestParam String materialCode) {
+        
+        try {
+            Map<String, Object> status = plantQuestionnaireService.getQuestionnaireStatus(plantCode, materialCode);
+            return ResponseEntity.ok(status);
+        } catch (Exception e) {
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("error", "Failed to get questionnaire status: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResult);
+        }
+    }
+    
+    /**
+     * Check if questionnaire is read-only
+     */
+    @GetMapping("/readonly")
+    public ResponseEntity<Map<String, Object>> isQuestionnaireReadOnly(
+            @RequestParam String plantCode,
+            @RequestParam String materialCode) {
+        
+        try {
+            boolean isReadOnly = plantQuestionnaireService.isQuestionnaireReadOnly(plantCode, materialCode);
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("isReadOnly", isReadOnly);
+            result.put("plantCode", plantCode);
+            result.put("materialCode", materialCode);
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("error", "Failed to check read-only status: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResult);
         }
     }
 
@@ -379,6 +444,34 @@ public class PlantQuestionnaireController {
             return ResponseEntity.ok("Sample data initialized for plant: " + plantCode);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to initialize sample data: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Force recalculation of completion stats for a material
+     */
+    @PostMapping("/recalculate-progress/{plantCode}/{materialCode}")
+    public ResponseEntity<Map<String, Object>> recalculateProgress(
+            @PathVariable String plantCode, 
+            @PathVariable String materialCode) {
+        try {
+            plantQuestionnaireService.recalculateCompletionStats(materialCode, plantCode);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Completion stats recalculated successfully");
+            response.put("materialCode", materialCode);
+            response.put("plantCode", plantCode);
+            response.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to recalculate completion stats");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("materialCode", materialCode);
+            errorResponse.put("plantCode", plantCode);
+            
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 }

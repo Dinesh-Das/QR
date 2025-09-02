@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -193,43 +194,147 @@ public class CqsAdminController {
     }
     
     /**
+     * Create CQS data for R123456 specifically
+     */
+    @PostMapping("/create-r123456-data")
+    public ResponseEntity<Map<String, Object>> createR123456Data() {
+        try {
+            Map<String, Object> result = new HashMap<>();
+            String materialCode = "R123456";
+            
+            // Create comprehensive CQS data for R123456
+            Map<String, String> cqsData = new HashMap<>();
+            cqsData.put("narcoticListed", "no");
+            cqsData.put("flashPoint65", "yes");
+            cqsData.put("petroleumClass", "class_b");
+            cqsData.put("flashPoint21", "no");
+            cqsData.put("isCorrosive", "yes");
+            cqsData.put("highlyToxic", "no");
+            cqsData.put("isExplosive", "no");
+            cqsData.put("autoignitionTemp", "no");
+            cqsData.put("dustExplosion", "no");
+            cqsData.put("electrostaticCharge", "no");
+            cqsData.put("ld50Oral", "yes");
+            cqsData.put("ld50Dermal", "yes");
+            cqsData.put("lc50Inhalation", "yes");
+            cqsData.put("carcinogenic", "no");
+            cqsData.put("mutagenic", "no");
+            cqsData.put("reproductiveToxicants", "no");
+            cqsData.put("endocrineDisruptor", "no");
+            cqsData.put("recommendedPpe", "Safety Glasses, Chemical Resistant Gloves, Lab Coat");
+            cqsData.put("isPoisonous", "no");
+            cqsData.put("antidoteSpecified", "yes");
+            cqsData.put("cmvrListed", "no");
+            cqsData.put("msihcListed", "no");
+            cqsData.put("factoriesActListed", "no");
+            cqsData.put("spillMeasuresProvided", "yes");
+            cqsData.put("silicaContent", "no");
+            cqsData.put("swarfAnalysis", "na");
+            cqsData.put("envToxic", "no");
+            cqsData.put("hhrmCategory", "Category 2");
+            cqsData.put("psmTier1Outdoor", "no");
+            cqsData.put("psmTier1Indoor", "no");
+            cqsData.put("psmTier2Outdoor", "no");
+            cqsData.put("psmTier2Indoor", "no");
+            cqsData.put("compatibilityClass", "Compatible");
+            cqsData.put("sapCompatibility", "yes");
+            
+            // Create or update the CQS data
+            cqsIntegrationService.createOrUpdateCqsData(materialCode, cqsData, "SYSTEM");
+            
+            result.put("message", "CQS data created/updated for " + materialCode);
+            result.put("materialCode", materialCode);
+            result.put("fieldsCreated", cqsData.size());
+            result.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("error", "Failed to create CQS data for R123456");
+            errorResult.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResult);
+        }
+    }
+    
+    /**
      * Initialize sample CQS data manually (for testing)
      */
     @PostMapping("/init-sample-data")
     public ResponseEntity<Map<String, Object>> initializeSampleData() {
         try {
-            // This will trigger the CqsDataInitializer logic manually
             Map<String, Object> result = new HashMap<>();
             
-            long existingCount = cqsRepository.count();
-            if (existingCount > 0) {
-                result.put("message", "Sample data already exists");
-                result.put("existingRecords", existingCount);
-                return ResponseEntity.ok(result);
-            }
-            
-            // Create sample data for testing
-            String[] materials = {"MAT001", "MAT002", "MAT003", "MAT004", "MAT005"};
+            // Create sample data for testing including R123456
+            String[] materials = {"MAT001", "MAT002", "MAT003", "MAT004", "MAT005", "R123456"};
             int createdCount = 0;
+            int updatedCount = 0;
             
             for (String materialCode : materials) {
-                if (!cqsRepository.existsByMaterialCode(materialCode)) {
-                    Map<String, String> sampleData = new HashMap<>();
-                    sampleData.put("narcoticListed", "No");
-                    sampleData.put("flashPoint65", materialCode.equals("MAT001") ? "No" : "Yes");
-                    sampleData.put("isCorrosive", "No");
-                    sampleData.put("highlyToxic", materialCode.equals("MAT001") || materialCode.equals("MAT002") ? "Yes" : "No");
+                Map<String, String> sampleData = new HashMap<>();
+                
+                // Create comprehensive CQS data based on material
+                if (materialCode.equals("R123456")) {
+                    // Hazardous material with comprehensive data
+                    sampleData.put("narcoticListed", "no");
+                    sampleData.put("flashPoint65", "yes");
+                    sampleData.put("petroleumClass", "class_b");
+                    sampleData.put("flashPoint21", "no");
+                    sampleData.put("isCorrosive", "yes");
+                    sampleData.put("highlyToxic", "no");
+                    sampleData.put("isExplosive", "no");
+                    sampleData.put("autoignitionTemp", "no");
+                    sampleData.put("dustExplosion", "no");
+                    sampleData.put("electrostaticCharge", "no");
+                    sampleData.put("ld50Oral", "yes");
+                    sampleData.put("ld50Dermal", "yes");
+                    sampleData.put("lc50Inhalation", "yes");
+                    sampleData.put("carcinogenic", "no");
+                    sampleData.put("mutagenic", "no");
+                    sampleData.put("reproductiveToxicants", "no");
+                    sampleData.put("endocrineDisruptor", "no");
+                    sampleData.put("recommendedPpe", "Safety Glasses, Chemical Resistant Gloves, Lab Coat");
+                    sampleData.put("isPoisonous", "no");
+                    sampleData.put("antidoteSpecified", "yes");
+                    sampleData.put("cmvrListed", "no");
+                    sampleData.put("msihcListed", "no");
+                    sampleData.put("factoriesActListed", "no");
+                    sampleData.put("spillMeasuresProvided", "yes");
+                    sampleData.put("silicaContent", "no");
+                    sampleData.put("swarfAnalysis", "na");
+                    sampleData.put("envToxic", "no");
+                    sampleData.put("hhrmCategory", "Category 2");
+                    sampleData.put("psmTier1Outdoor", "no");
+                    sampleData.put("psmTier1Indoor", "no");
+                    sampleData.put("psmTier2Outdoor", "no");
+                    sampleData.put("psmTier2Indoor", "no");
+                    sampleData.put("compatibilityClass", "Compatible");
+                    sampleData.put("sapCompatibility", "yes");
+                } else {
+                    // Default data for other materials
+                    sampleData.put("narcoticListed", "no");
+                    sampleData.put("flashPoint65", materialCode.equals("MAT001") ? "no" : "yes");
+                    sampleData.put("isCorrosive", "no");
+                    sampleData.put("highlyToxic", materialCode.equals("MAT001") || materialCode.equals("MAT002") ? "yes" : "no");
                     sampleData.put("recommendedPpe", "Safety Glasses, Gloves");
-                    sampleData.put("carcinogenic", "No");
-                    sampleData.put("mutagenic", "No");
-                    
+                    sampleData.put("carcinogenic", "no");
+                    sampleData.put("mutagenic", "no");
+                    sampleData.put("reproductiveToxicants", "no");
+                }
+                
+                if (cqsRepository.existsByMaterialCode(materialCode)) {
+                    // Update existing data
+                    cqsIntegrationService.createOrUpdateCqsData(materialCode, sampleData, "SYSTEM");
+                    updatedCount++;
+                } else {
+                    // Create new data
                     cqsIntegrationService.createOrUpdateCqsData(materialCode, sampleData, "SYSTEM");
                     createdCount++;
                 }
             }
             
-            result.put("message", "Sample CQS data initialized");
+            result.put("message", "Sample CQS data initialized/updated");
             result.put("createdRecords", createdCount);
+            result.put("updatedRecords", updatedCount);
             result.put("totalRecords", cqsRepository.count());
             
             return ResponseEntity.ok(result);

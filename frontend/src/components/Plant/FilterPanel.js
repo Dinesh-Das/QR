@@ -145,7 +145,6 @@ const FilterPanel = React.memo(({
             <Option value="DRAFT">Draft</Option>
             <Option value="IN_PROGRESS">In Progress</Option>
             <Option value="COMPLETED">Completed</Option>
-            <Option value="SUBMITTED">Submitted</Option>
           </Select>
         </Col>
         <Col xs={12} sm={8} md={8} lg={8}>

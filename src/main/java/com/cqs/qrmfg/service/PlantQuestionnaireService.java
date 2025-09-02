@@ -152,6 +152,15 @@ public class PlantQuestionnaireService {
         try {
             System.out.println("PlantQuestionnaireService: Loading template for material=" + materialCode + ", plant=" + plantCode);
             
+            // Get CQS data for auto-population
+            CqsDataDto cqsData = null;
+            try {
+                cqsData = getCqsData(materialCode, plantCode);
+                System.out.println("PlantQuestionnaireService: CQS data loaded successfully");
+            } catch (Exception e) {
+                System.err.println("PlantQuestionnaireService: Failed to load CQS data: " + e.getMessage());
+            }
+            
             // Get all active template questions ordered by step and order index
             List<QuestionTemplate> templates = questionTemplateRepository.findByIsActiveTrueOrderByStepNumberAscOrderIndexAsc();
             
@@ -177,6 +186,8 @@ public class PlantQuestionnaireService {
                 .sorted()
                 .collect(Collectors.toList());
             
+            final CqsDataDto finalCqsData = cqsData; // Make it effectively final for lambda
+            
             for (Integer stepNumber : sortedStepNumbers) {
                 List<QuestionTemplate> stepTemplates = stepGroups.get(stepNumber);
                 
@@ -197,7 +208,7 @@ public class PlantQuestionnaireService {
                     .collect(Collectors.toList());
                 
                 List<QuestionnaireFieldDto> fields = sortedTemplates.stream()
-                    .map(this::convertTemplateToField)
+                    .map(template -> convertTemplateToField(template, finalCqsData))
                     .collect(Collectors.toList());
                 
                 stepDto.setFields(fields);
@@ -212,6 +223,9 @@ public class PlantQuestionnaireService {
             templateDto.setTemplateType(templateType);
             templateDto.setVersion(1);
             templateDto.setCreatedAt(LocalDateTime.now());
+            
+            // Update completion stats based on CQS auto-filled data
+            updateCompletionStatsForTemplate(materialCode, plantCode, steps, finalCqsData);
             
             return templateDto;
             
@@ -312,21 +326,271 @@ public class PlantQuestionnaireService {
     }
     
     /**
-     * Submit plant questionnaire
+     * Submit plant questionnaire with validation
      */
     @Transactional
-    public void submitPlantQuestionnaire(String plantCode, String materialCode, String submittedBy) {
+    public Map<String, Object> submitPlantQuestionnaire(String plantCode, String materialCode, String submittedBy) {
         try {
+            Map<String, Object> result = new HashMap<>();
+            
             PlantSpecificDataId id = new PlantSpecificDataId(plantCode, materialCode);
             PlantSpecificData plantData = plantSpecificDataRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Plant-specific data not found"));
             
+            // Validate questionnaire completion before submission
+            ValidationResult validation = validateQuestionnaireCompletion(plantCode, materialCode);
+            
+            if (!validation.isValid()) {
+                result.put("success", false);
+                result.put("message", "Cannot submit questionnaire: " + validation.getMessage());
+                result.put("missingFields", validation.getMissingFields());
+                result.put("completionPercentage", validation.getCompletionPercentage());
+                return result;
+            }
+            
+            // Submit the plant data
             plantData.submit(submittedBy);
             plantSpecificDataRepository.save(plantData);
             
+            // Update workflow status to COMPLETED
+            updateWorkflowStatusOnSubmission(plantCode, materialCode, submittedBy);
+            
+            result.put("success", true);
+            result.put("message", "Questionnaire submitted successfully");
+            result.put("submittedAt", plantData.getSubmittedAt());
+            result.put("completionPercentage", plantData.getCompletionPercentage());
+            
+            return result;
+            
         } catch (Exception e) {
-            throw new RuntimeException("Failed to submit plant questionnaire: " + e.getMessage(), e);
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("success", false);
+            errorResult.put("message", "Failed to submit plant questionnaire: " + e.getMessage());
+            return errorResult;
         }
+    }
+    
+    /**
+     * Validate questionnaire completion before submission
+     */
+    @Transactional(readOnly = true)
+    public ValidationResult validateQuestionnaireCompletion(String plantCode, String materialCode) {
+        try {
+            // Get the questionnaire template
+            QuestionnaireTemplateDto template = getQuestionnaireTemplate(materialCode, plantCode, "PLANT_QUESTIONNAIRE");
+            
+            // Get plant-specific data
+            PlantSpecificDataDto plantData = getPlantSpecificData(plantCode, materialCode);
+            if (plantData == null) {
+                return new ValidationResult(false, "Plant-specific data not found", new ArrayList<>(), 0);
+            }
+            
+            Map<String, Object> plantInputs = plantData.getPlantInputs() != null ? plantData.getPlantInputs() : new HashMap<>();
+            List<String> missingRequiredFields = new ArrayList<>();
+            
+            int totalFields = 0;
+            int completedFields = 0;
+            int requiredFields = 0;
+            int completedRequiredFields = 0;
+            
+            // Validate each step and field
+            for (QuestionnaireStepDto step : template.getSteps()) {
+                for (QuestionnaireFieldDto field : step.getFields()) {
+                    totalFields++;
+                    
+                    boolean isCompleted = false;
+                    
+                    if (field.isCqsAutoPopulated()) {
+                        // CQS field is completed if it has a valid CQS value
+                        isCompleted = field.getCqsValue() != null && 
+                                     !field.getCqsValue().trim().isEmpty() && 
+                                     !"Data not available".equals(field.getCqsValue());
+                    } else {
+                        // Plant field - check if user has provided a value
+                        Object value = plantInputs.get(field.getName());
+                        if (value != null) {
+                            if (value instanceof String) {
+                                isCompleted = !((String) value).trim().isEmpty();
+                            } else if (value instanceof java.util.List) {
+                                isCompleted = !((java.util.List<?>) value).isEmpty();
+                            } else {
+                                isCompleted = true;
+                            }
+                        }
+                    }
+                    
+                    if (isCompleted) {
+                        completedFields++;
+                    }
+                    
+                    // Check required fields
+                    if (field.isRequired()) {
+                        requiredFields++;
+                        if (isCompleted) {
+                            completedRequiredFields++;
+                        } else {
+                            missingRequiredFields.add(field.getName() + " (" + field.getLabel() + ")");
+                        }
+                    }
+                }
+            }
+            
+            int completionPercentage = totalFields > 0 ? Math.round((float) completedFields / totalFields * 100) : 0;
+            
+            // Validation rules:
+            // 1. All required fields must be completed
+            // 2. At least 90% of total fields should be completed for submission
+            boolean isValid = missingRequiredFields.isEmpty() && completionPercentage >= 90;
+            
+            String message;
+            if (!missingRequiredFields.isEmpty()) {
+                message = "Missing required fields: " + missingRequiredFields.size() + " field(s)";
+            } else if (completionPercentage < 90) {
+                message = "Questionnaire is only " + completionPercentage + "% complete. At least 90% completion required for submission.";
+            } else {
+                message = "Questionnaire is ready for submission";
+            }
+            
+            return new ValidationResult(isValid, message, missingRequiredFields, completionPercentage);
+            
+        } catch (Exception e) {
+            return new ValidationResult(false, "Validation failed: " + e.getMessage(), new ArrayList<>(), 0);
+        }
+    }
+    
+    /**
+     * Update workflow status when questionnaire is submitted
+     */
+    @Transactional
+    private void updateWorkflowStatusOnSubmission(String plantCode, String materialCode, String submittedBy) {
+        try {
+            // Find the workflow for this plant and material
+            List<Workflow> workflows = workflowRepository.findByPlantCodeWithQueries(plantCode);
+            
+            Workflow targetWorkflow = workflows.stream()
+                .filter(w -> materialCode.equals(w.getMaterialCode()))
+                .findFirst()
+                .orElse(null);
+            
+            if (targetWorkflow != null) {
+                // Update workflow state to COMPLETED
+                targetWorkflow.transitionTo(WorkflowState.COMPLETED, submittedBy);
+                workflowRepository.save(targetWorkflow);
+                
+                System.out.println("PlantQuestionnaireService: Updated workflow " + targetWorkflow.getId() + 
+                                 " status to COMPLETED for material " + materialCode + " at plant " + plantCode);
+            } else {
+                System.err.println("PlantQuestionnaireService: No workflow found for material " + materialCode + 
+                           " at plant " + plantCode);
+            }
+            
+        } catch (Exception e) {
+            System.err.println("PlantQuestionnaireService: Failed to update workflow status: " + e.getMessage());
+            // Don't throw exception to avoid breaking the submission process
+        }
+    }
+    
+    /**
+     * Check if questionnaire is submitted and read-only
+     */
+    @Transactional(readOnly = true)
+    public boolean isQuestionnaireReadOnly(String plantCode, String materialCode) {
+        try {
+            PlantSpecificDataDto plantData = getPlantSpecificData(plantCode, materialCode);
+            boolean isSubmitted = plantData != null && plantData.getSubmittedAt() != null;
+            
+            // Also check if workflow is completed
+            if (!isSubmitted) {
+                List<Workflow> workflows = workflowRepository.findByPlantCodeWithQueries(plantCode);
+                Workflow targetWorkflow = workflows.stream()
+                    .filter(w -> materialCode.equals(w.getMaterialCode()))
+                    .findFirst()
+                    .orElse(null);
+                
+                if (targetWorkflow != null && targetWorkflow.getState() == WorkflowState.COMPLETED) {
+                    isSubmitted = true;
+                }
+            }
+            
+            return isSubmitted;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Get questionnaire submission status
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getQuestionnaireStatus(String plantCode, String materialCode) {
+        try {
+            Map<String, Object> status = new HashMap<>();
+            
+            PlantSpecificDataDto plantData = getPlantSpecificData(plantCode, materialCode);
+            if (plantData == null) {
+                status.put("exists", false);
+                status.put("isSubmitted", false);
+                status.put("isReadOnly", false);
+                status.put("completionPercentage", 0);
+                return status;
+            }
+            
+            boolean isSubmitted = plantData.getSubmittedAt() != null;
+            
+            // Check workflow state
+            List<Workflow> workflows = workflowRepository.findByPlantCodeWithQueries(plantCode);
+            Workflow targetWorkflow = workflows.stream()
+                .filter(w -> materialCode.equals(w.getMaterialCode()))
+                .findFirst()
+                .orElse(null);
+            
+            boolean isWorkflowCompleted = targetWorkflow != null && targetWorkflow.getState() == WorkflowState.COMPLETED;
+            boolean isReadOnly = isSubmitted || isWorkflowCompleted;
+            
+            ValidationResult validation = validateQuestionnaireCompletion(plantCode, materialCode);
+            
+            status.put("exists", true);
+            status.put("isSubmitted", isSubmitted);
+            status.put("isWorkflowCompleted", isWorkflowCompleted);
+            status.put("isReadOnly", isReadOnly);
+            status.put("completionPercentage", plantData.getCompletionPercentage());
+            status.put("submittedAt", plantData.getSubmittedAt());
+            status.put("submittedBy", plantData.getSubmittedBy());
+            status.put("canSubmit", validation.isValid() && !isReadOnly);
+            status.put("validationMessage", validation.getMessage());
+            status.put("missingRequiredFields", validation.getMissingFields().size());
+            status.put("workflowState", targetWorkflow != null ? targetWorkflow.getState().name() : "UNKNOWN");
+            
+            return status;
+            
+        } catch (Exception e) {
+            Map<String, Object> errorStatus = new HashMap<>();
+            errorStatus.put("exists", false);
+            errorStatus.put("error", e.getMessage());
+            return errorStatus;
+        }
+    }
+    
+    /**
+     * Validation result class
+     */
+    public static class ValidationResult {
+        private final boolean valid;
+        private final String message;
+        private final List<String> missingFields;
+        private final int completionPercentage;
+        
+        public ValidationResult(boolean valid, String message, List<String> missingFields, int completionPercentage) {
+            this.valid = valid;
+            this.message = message;
+            this.missingFields = missingFields;
+            this.completionPercentage = completionPercentage;
+        }
+        
+        public boolean isValid() { return valid; }
+        public String getMessage() { return message; }
+        public List<String> getMissingFields() { return missingFields; }
+        public int getCompletionPercentage() { return completionPercentage; }
     }
     
     /**
@@ -379,7 +643,7 @@ public class PlantQuestionnaireService {
         return stepDescriptions.getOrDefault(stepNumber, "Step " + stepNumber + " information");
     }
     
-    private QuestionnaireFieldDto convertTemplateToField(QuestionTemplate template) {
+    private QuestionnaireFieldDto convertTemplateToField(QuestionTemplate template, CqsDataDto cqsData) {
         QuestionnaireFieldDto field = new QuestionnaireFieldDto();
         field.setName(template.getFieldName());
         field.setLabel(template.getQuestionText());
@@ -394,21 +658,39 @@ public class PlantQuestionnaireService {
         
         if (isCqsField) {
             field.setDisabled(true);
-            field.setCqsValue("Pending IMP");
-            field.setPlaceholder("Auto-populated by CQS (Pending Implementation)");
+            
+            // Try to get CQS value for this field
+            String cqsValue = getCqsValueForField(template.getFieldName(), cqsData);
+            if (cqsValue != null && !cqsValue.trim().isEmpty()) {
+                field.setCqsValue(cqsValue);
+                field.setPlaceholder("Auto-populated by CQS");
+                // For CQS fields with values, don't show options - show the value directly
+                field.setOptions(null);
+            } else {
+                field.setCqsValue("Data not available");
+                field.setPlaceholder("CQS data not available for this material");
+                // Still parse options for fallback display
+                if (template.hasOptions()) {
+                    try {
+                        List<QuestionnaireFieldDto.OptionDto> options = parseOptions(template.getOptions());
+                        field.setOptions(options);
+                    } catch (Exception e) {
+                        System.err.println("Failed to parse options for field " + template.getFieldName() + ": " + e.getMessage());
+                    }
+                }
+            }
         } else {
             field.setDisabled(false);
             field.setPlaceholder(template.getHelpText());
-        }
-        
-        // Parse options if available
-        if (template.hasOptions()) {
-            try {
-                List<QuestionnaireFieldDto.OptionDto> options = parseOptions(template.getOptions());
-                field.setOptions(options);
-            } catch (Exception e) {
-                // Log error and continue
-                System.err.println("Failed to parse options for field " + template.getFieldName() + ": " + e.getMessage());
+            
+            // Parse options for non-CQS fields
+            if (template.hasOptions()) {
+                try {
+                    List<QuestionnaireFieldDto.OptionDto> options = parseOptions(template.getOptions());
+                    field.setOptions(options);
+                } catch (Exception e) {
+                    System.err.println("Failed to parse options for field " + template.getFieldName() + ": " + e.getMessage());
+                }
             }
         }
         
@@ -417,6 +699,130 @@ public class PlantQuestionnaireService {
         field.setDependsOnField(template.getDependsOnQuestionId());
         
         return field;
+    }
+    
+    /**
+     * Update completion statistics based on CQS auto-filled data
+     */
+    @Transactional
+    private void updateCompletionStatsForTemplate(String materialCode, String plantCode, 
+                                                List<QuestionnaireStepDto> steps, CqsDataDto cqsData) {
+        try {
+            // Calculate field statistics
+            int totalFields = 0;
+            int completedFields = 0;
+            int requiredFields = 0;
+            int completedRequiredFields = 0;
+            
+            for (QuestionnaireStepDto step : steps) {
+                for (QuestionnaireFieldDto field : step.getFields()) {
+                    totalFields++;
+                    
+                    if (field.isRequired()) {
+                        requiredFields++;
+                    }
+                    
+                    // Check if field is completed (has CQS value or is not a CQS field)
+                    boolean isCompleted = false;
+                    if (field.isCqsAutoPopulated()) {
+                        // CQS field is completed if it has a value
+                        String cqsValue = getCqsValueForField(field.getName(), cqsData);
+                        isCompleted = (cqsValue != null && !cqsValue.trim().isEmpty() && 
+                                     !"Data not available".equals(cqsValue));
+                    } else {
+                        // Non-CQS fields are not completed by default (plant needs to fill them)
+                        isCompleted = false;
+                    }
+                    
+                    if (isCompleted) {
+                        completedFields++;
+                        if (field.isRequired()) {
+                            completedRequiredFields++;
+                        }
+                    }
+                }
+            }
+            
+            // Get or create plant-specific data
+            PlantSpecificDataId id = new PlantSpecificDataId(plantCode, materialCode);
+            PlantSpecificData plantData = plantSpecificDataRepository.findById(id)
+                .orElseGet(() -> {
+                    PlantSpecificData newData = new PlantSpecificData(plantCode, materialCode);
+                    newData.setCreatedBy("SYSTEM");
+                    return newData;
+                });
+            
+            // Always update completion stats to override any incorrect existing data
+            plantData.updateCompletionStats(totalFields, completedFields, requiredFields, completedRequiredFields);
+            
+            // Force update the updatedBy and updatedAt to indicate this was recalculated
+            plantData.setUpdatedBy("SYSTEM_RECALC");
+            plantData.setUpdatedAt(LocalDateTime.now());
+            
+            // Update CQS sync status if we have CQS data
+            if (cqsData != null && cqsData.getCqsData() != null && !cqsData.getCqsData().isEmpty()) {
+                plantData.setCqsSyncStatus("SYNCED");
+                plantData.setLastCqsSync(LocalDateTime.now());
+            }
+            
+            // Save the updated plant data
+            plantSpecificDataRepository.save(plantData);
+            
+            System.out.println("PlantQuestionnaireService: Updated completion stats - " +
+                             "Total: " + totalFields + ", Completed: " + completedFields + 
+                             ", Required: " + requiredFields + ", Completed Required: " + completedRequiredFields +
+                             ", Progress: " + plantData.getCompletionPercentage() + "%");
+            
+        } catch (Exception e) {
+            System.err.println("Failed to update completion stats: " + e.getMessage());
+            // Don't throw exception to avoid breaking template loading
+        }
+    }
+    
+    /**
+     * Backward compatibility method
+     */
+    private QuestionnaireFieldDto convertTemplateToField(QuestionTemplate template) {
+        return convertTemplateToField(template, null);
+    }
+    
+    /**
+     * Get CQS value for a specific field name
+     */
+    private String getCqsValueForField(String fieldName, CqsDataDto cqsData) {
+        if (cqsData == null || cqsData.getCqsData() == null) {
+            return null;
+        }
+        
+        Object value = cqsData.getCqsData().get(fieldName);
+        if (value == null) {
+            return null;
+        }
+        
+        // Convert boolean values to user-friendly text
+        if (value instanceof Boolean) {
+            return ((Boolean) value) ? "Yes" : "No";
+        }
+        
+        // Convert string values, handling common CQS values
+        String stringValue = value.toString().toLowerCase();
+        switch (stringValue) {
+            case "true":
+            case "yes":
+            case "y":
+                return "Yes";
+            case "false":
+            case "no":
+            case "n":
+                return "No";
+            case "na":
+            case "n/a":
+            case "not_applicable":
+                return "N/A";
+            default:
+                // Return the original value with proper capitalization
+                return value.toString();
+        }
     }
     
     private List<QuestionnaireFieldDto.OptionDto> parseOptions(String optionsJson) {
@@ -513,82 +919,90 @@ public class PlantQuestionnaireService {
         try {
             Map<String, Object> dashboardData = new HashMap<>();
             
-            // Get all workflows for this plant (with queries loaded)
+            // Get all workflows for this plant
             List<Workflow> workflows = workflowRepository.findByPlantCodeWithQueries(plantCode);
             
             // Convert to dashboard format with progress information
             List<Map<String, Object>> workflowsWithProgress = workflows.stream()
                 .map(workflow -> {
-                    Map<String, Object> workflowInfo = new HashMap<>();
-                    workflowInfo.put("materialCode", workflow.getMaterialCode());
-                    workflowInfo.put("plantCode", workflow.getPlantCode());
-                    workflowInfo.put("workflowId", workflow.getId());
+                    Map<String, Object> workflowData = new HashMap<>();
                     
-                    // Get plant-specific data if available
-                    PlantSpecificData plantData = null;
-                    try {
-                        PlantSpecificDataId id = new PlantSpecificDataId(plantCode, workflow.getMaterialCode());
-                        plantData = plantSpecificDataRepository.findById(id).orElse(null);
-                    } catch (Exception e) {
-                        // Plant data not available, use workflow defaults
-                    }
+                    // Get plant-specific data for this workflow
+                    PlantSpecificDataDto plantData = getPlantSpecificData(plantCode, workflow.getMaterialCode());
+                    
+                    workflowData.put("workflowId", workflow.getId());
+                    workflowData.put("materialCode", workflow.getMaterialCode());
+                    workflowData.put("materialName", workflow.getMaterialName());
+                    workflowData.put("plantCode", plantCode);
+                    workflowData.put("itemDescription", workflow.getMaterialDescription());
+                    workflowData.put("lastModified", workflow.getLastModified());
                     
                     if (plantData != null) {
-                        workflowInfo.put("completionStatus", plantData.getCompletionStatus());
-                        workflowInfo.put("completionPercentage", plantData.getCompletionPercentage());
-                        workflowInfo.put("totalFields", plantData.getTotalFields());
-                        workflowInfo.put("completedFields", plantData.getCompletedFields());
-                        workflowInfo.put("requiredFields", plantData.getRequiredFields());
-                        workflowInfo.put("completedRequiredFields", plantData.getCompletedRequiredFields());
-                        workflowInfo.put("lastModified", plantData.getUpdatedAt());
-                        workflowInfo.put("submittedAt", plantData.getSubmittedAt());
-                        workflowInfo.put("submittedBy", plantData.getSubmittedBy());
-                        workflowInfo.put("isSubmitted", plantData.isSubmitted());
-                        workflowInfo.put("isCompleted", plantData.isCompleted());
+                        workflowData.put("completionPercentage", plantData.getCompletionPercentage());
+                        workflowData.put("totalFields", plantData.getTotalFields());
+                        workflowData.put("completedFields", plantData.getCompletedFields());
+                        workflowData.put("requiredFields", plantData.getRequiredFields());
+                        workflowData.put("completedRequiredFields", plantData.getCompletedRequiredFields());
+                        workflowData.put("isSubmitted", plantData.getSubmittedAt() != null);
+                        workflowData.put("submittedAt", plantData.getSubmittedAt());
+                        workflowData.put("submittedBy", plantData.getSubmittedBy());
+                        workflowData.put("plantInputs", plantData.getPlantInputs());
+                        workflowData.put("cqsSyncStatus", plantData.getCqsSyncStatus());
+                        workflowData.put("lastCqsSync", plantData.getLastCqsSync());
+                        
+                        // Determine completion status based on both plant data and workflow state
+                        String completionStatus;
+                        if (workflow.getState() == WorkflowState.COMPLETED || plantData.getSubmittedAt() != null) {
+                            completionStatus = "COMPLETED";
+                        } else if (plantData.getCompletionPercentage() != null && plantData.getCompletionPercentage() > 0) {
+                            completionStatus = "IN_PROGRESS";
+                        } else {
+                            completionStatus = "DRAFT";
+                        }
+                        workflowData.put("completionStatus", completionStatus);
                     } else {
-                        // Use workflow defaults when plant data is not available
-                        workflowInfo.put("completionStatus", workflow.getState().toString());
-                        workflowInfo.put("completionPercentage", 0);
-                        workflowInfo.put("totalFields", 0);
-                        workflowInfo.put("completedFields", 0);
-                        workflowInfo.put("requiredFields", 0);
-                        workflowInfo.put("completedRequiredFields", 0);
-                        workflowInfo.put("lastModified", workflow.getLastModified());
-                        workflowInfo.put("submittedAt", null);
-                        workflowInfo.put("submittedBy", null);
-                        workflowInfo.put("isSubmitted", false);
-                        workflowInfo.put("isCompleted", workflow.getState() == WorkflowState.COMPLETED);
+                        // No plant data exists yet - initialize with defaults
+                        workflowData.put("completionPercentage", 0);
+                        workflowData.put("totalFields", 0);
+                        workflowData.put("completedFields", 0);
+                        workflowData.put("requiredFields", 0);
+                        workflowData.put("completedRequiredFields", 0);
+                        workflowData.put("isSubmitted", false);
+                        workflowData.put("submittedAt", null);
+                        workflowData.put("submittedBy", null);
+                        workflowData.put("plantInputs", new HashMap<>());
+                        workflowData.put("completionStatus", "DRAFT");
+                        workflowData.put("cqsSyncStatus", "NOT_SYNCED");
+                        workflowData.put("lastCqsSync", null);
                     }
                     
-                    // Add open queries count from workflow
-                    workflowInfo.put("openQueries", workflow.getOpenQueriesCount());
-                    workflowInfo.put("totalQueries", workflow.getTotalQueriesCount());
+                    // Add open queries count
+                    workflowData.put("openQueries", 0); // TODO: Implement query counting
                     
-                    return workflowInfo;
+                    return workflowData;
                 })
                 .collect(Collectors.toList());
             
-            dashboardData.put("workflows", workflowsWithProgress);
-            dashboardData.put("totalWorkflows", workflowsWithProgress.size());
+            // Calculate dashboard statistics
+            int totalWorkflows = workflowsWithProgress.size();
+            int completedCount = (int) workflowsWithProgress.stream()
+                .filter(w -> "COMPLETED".equals(w.get("completionStatus")))
+                .count();
+            int inProgressCount = (int) workflowsWithProgress.stream()
+                .filter(w -> "IN_PROGRESS".equals(w.get("completionStatus")))
+                .count();
+            int draftCount = (int) workflowsWithProgress.stream()
+                .filter(w -> "DRAFT".equals(w.get("completionStatus")))
+                .count();
             
-            // Calculate summary statistics
-            long completedCount = workflowsWithProgress.stream()
-                .mapToLong(w -> "COMPLETED".equals(w.get("completionStatus")) || "SUBMITTED".equals(w.get("completionStatus")) ? 1 : 0)
-                .sum();
-            
-            long inProgressCount = workflowsWithProgress.stream()
-                .mapToLong(w -> "IN_PROGRESS".equals(w.get("completionStatus")) ? 1 : 0)
-                .sum();
-            
-            long draftCount = workflowsWithProgress.stream()
-                .mapToLong(w -> "DRAFT".equals(w.get("completionStatus")) ? 1 : 0)
-                .sum();
-            
+            // Calculate average completion percentage
             double averageCompletion = workflowsWithProgress.stream()
                 .mapToInt(w -> (Integer) w.getOrDefault("completionPercentage", 0))
                 .average()
                 .orElse(0.0);
             
+            dashboardData.put("workflows", workflowsWithProgress);
+            dashboardData.put("totalWorkflows", totalWorkflows);
             dashboardData.put("completedCount", completedCount);
             dashboardData.put("inProgressCount", inProgressCount);
             dashboardData.put("draftCount", draftCount);
@@ -602,53 +1016,128 @@ public class PlantQuestionnaireService {
             throw new RuntimeException("Failed to get plant dashboard data: " + e.getMessage(), e);
         }
     }
-
+    
     /**
-     * Initialize sample plant data for testing (temporary method)
+     * Initialize sample plant data for testing
      */
     @Transactional
     public void initializeSamplePlantData(String plantCode) {
         try {
-            // Check if data already exists
-            List<PlantSpecificData> existingData = plantSpecificDataRepository.findByPlantCode(plantCode);
-            if (!existingData.isEmpty()) {
-                return; // Data already exists
-            }
-
-            // Create sample plant-specific data records
-            String[] sampleMaterials = {"MAT001", "MAT002", "MAT003", "MAT004", "MAT005"};
-            for (String materialCode : sampleMaterials) {
-                PlantSpecificData plantData = new PlantSpecificData(plantCode, materialCode);
-                    plantData.setWorkflowId(System.currentTimeMillis()); // Mock workflow ID
-                    plantData.setCreatedBy("SYSTEM");
-                    plantData.setUpdatedBy("SYSTEM");
+            // Get all workflows for this plant
+            List<Workflow> workflows = workflowRepository.findByPlantCodeWithQueries(plantCode);
+            
+            for (Workflow workflow : workflows) {
+                String materialCode = workflow.getMaterialCode();
+                
+                // Check if plant-specific data already exists
+                PlantSpecificDataDto existingData = getPlantSpecificData(plantCode, materialCode);
+                if (existingData == null) {
+                    // Create new plant-specific data with sample inputs
+                    PlantSpecificDataDto plantData = getOrCreatePlantSpecificData(plantCode, materialCode, workflow.getId());
                     
-                    // Set random completion data
-                    int totalFields = 87;
-                    int completedFields = (int) (Math.random() * totalFields);
-                    int requiredFields = 50;
-                    int completedRequiredFields = Math.min(completedFields, requiredFields);
+                    // Add some sample plant inputs
+                    Map<String, Object> sampleInputs = new HashMap<>();
+                    sampleInputs.put("msds_available", "yes");
+                    sampleInputs.put("missing_info", "no");
+                    sampleInputs.put("sourcing_asked", "yes");
+                    sampleInputs.put("cas_available", "yes");
+                    sampleInputs.put("corrosive_storage", "proper_ventilation");
+                    sampleInputs.put("toxic_powder_handling", "enclosed_system");
                     
-                    plantData.updateCompletionStats(totalFields, completedFields, requiredFields, completedRequiredFields);
+                    plantData.setPlantInputs(sampleInputs);
                     
-                    // Set random status
-                    String[] statuses = {"DRAFT", "IN_PROGRESS", "COMPLETED"};
-                    String status = statuses[(int) (Math.random() * statuses.length)];
-                    plantData.setCompletionStatus(status);
+                    // Calculate completion stats
+                    plantData.setTotalFields(87); // Total template fields
+                    plantData.setCompletedFields(6); // Sample completed fields
+                    plantData.setRequiredFields(50); // Estimated required fields
+                    plantData.setCompletedRequiredFields(4); // Sample completed required fields
                     
-                    // Initialize with empty JSON data
-                    plantData.setCqsInputs("{}");
-                    plantData.setPlantInputs("{}");
-                    plantData.setCombinedData("{}");
-                    
-                    plantSpecificDataRepository.save(plantData);
+                    savePlantSpecificData(plantData, "SYSTEM_SAMPLE");
                 }
-            
-            
-            System.out.println("Initialized sample plant data for plant: " + plantCode);
+            }
             
         } catch (Exception e) {
-            System.err.println("Failed to initialize sample plant data: " + e.getMessage());
+            throw new RuntimeException("Failed to initialize sample plant data: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Recalculate completion statistics for a specific material and plant
+     */
+    @Transactional
+    public void recalculateCompletionStats(String materialCode, String plantCode) {
+        try {
+            // Get the questionnaire template to get correct field counts
+            QuestionnaireTemplateDto template = getQuestionnaireTemplate(materialCode, plantCode, "PLANT_QUESTIONNAIRE");
+            
+            // Get plant-specific data
+            PlantSpecificDataDto plantData = getPlantSpecificData(plantCode, materialCode);
+            if (plantData == null) {
+                throw new RuntimeException("Plant-specific data not found for material " + materialCode + " and plant " + plantCode);
+            }
+            
+            // Calculate field statistics from template
+            int totalFields = 0;
+            int requiredFields = 0;
+            int completedFields = 0;
+            int completedRequiredFields = 0;
+            
+            Map<String, Object> plantInputs = plantData.getPlantInputs() != null ? plantData.getPlantInputs() : new HashMap<>();
+            
+            for (QuestionnaireStepDto step : template.getSteps()) {
+                for (QuestionnaireFieldDto field : step.getFields()) {
+                    totalFields++;
+                    
+                    if (field.isRequired()) {
+                        requiredFields++;
+                    }
+                    
+                    // Check if field is completed (has a value)
+                    Object value = plantInputs.get(field.getName());
+                    boolean isCompleted = false;
+                    
+                    if (field.isCqsAutoPopulated()) {
+                        // CQS field is completed if it has a CQS value
+                        isCompleted = field.getCqsValue() != null && 
+                                     !field.getCqsValue().trim().isEmpty() && 
+                                     !"Data not available".equals(field.getCqsValue());
+                    } else {
+                        // Plant field is completed if it has a value
+                        if (value != null) {
+                            if (value instanceof String) {
+                                isCompleted = !((String) value).trim().isEmpty();
+                            } else if (value instanceof java.util.List) {
+                                isCompleted = !((java.util.List<?>) value).isEmpty();
+                            } else {
+                                isCompleted = true;
+                            }
+                        }
+                    }
+                    
+                    if (isCompleted) {
+                        completedFields++;
+                        if (field.isRequired()) {
+                            completedRequiredFields++;
+                        }
+                    }
+                }
+            }
+            
+            // Update plant-specific data with recalculated stats
+            plantData.setTotalFields(totalFields);
+            plantData.setCompletedFields(completedFields);
+            plantData.setRequiredFields(requiredFields);
+            plantData.setCompletedRequiredFields(completedRequiredFields);
+            
+            // Save the updated data
+            savePlantSpecificData(plantData, "SYSTEM_RECALC");
+            
+            System.out.println("PlantQuestionnaireService: Recalculated completion stats for " + materialCode + 
+                             " at plant " + plantCode + " - Total: " + totalFields + 
+                             ", Completed: " + completedFields + ", Progress: " + plantData.getCompletionPercentage() + "%");
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to recalculate completion stats: " + e.getMessage(), e);
         }
     }
 }

@@ -49,7 +49,8 @@ public class CqsDataInitializer implements CommandLineRunner {
             createSampleCqsData("MAT002", "Benzene", true),
             createSampleCqsData("MAT003", "Toluene", false),
             createSampleCqsData("MAT004", "Methanol", true),
-            createSampleCqsData("MAT005", "Ethanol", false)
+            createSampleCqsData("MAT005", "Ethanol", false),
+            createSampleCqsData("R123456", "Test Material", true)  // Add the material from the dashboard
         );
         
         cqsRepository.saveAll(sampleData);

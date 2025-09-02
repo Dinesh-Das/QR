@@ -83,9 +83,7 @@ export const usePlantWorkflows = (currentPlant, userPlantData) => {
             
             // Determine the correct completion status based on actual progress
             let completionStatus;
-            if (workflow.isSubmitted) {
-              completionStatus = 'SUBMITTED';
-            } else if (correctedWorkflow.completionPercentage === 100) {
+            if (workflow.isSubmitted || correctedWorkflow.completionPercentage === 100) {
               completionStatus = 'COMPLETED';
             } else if (correctedWorkflow.completionPercentage > 0) {
               completionStatus = 'IN_PROGRESS';
@@ -144,9 +142,7 @@ export const usePlantWorkflows = (currentPlant, userPlantData) => {
               // Determine the correct completion status based on actual progress
               let completionStatus;
               const isSubmitted = workflow.isSubmitted || workflow.submittedAt;
-              if (isSubmitted) {
-                completionStatus = 'SUBMITTED';
-              } else if (completionPercentage === 100) {
+              if (isSubmitted || completionPercentage === 100) {
                 completionStatus = 'COMPLETED';
               } else if (completionPercentage > 0) {
                 completionStatus = 'IN_PROGRESS';

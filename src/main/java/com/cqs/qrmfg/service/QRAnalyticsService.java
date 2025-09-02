@@ -774,7 +774,7 @@ public class QRAnalyticsService {
                     double cycleTime = java.time.Duration.between(w.getCreatedAt(), endTime).toHours();
                     
                     // Count queries for this workflow using the query repository
-                    int queryCount = (int) queryRepository.findAll().stream()
+                    int queryCount = (int) queryRepository.findAllWithWorkflow().stream()
                         .filter(q -> q.getWorkflow() != null && q.getWorkflow().getId().equals(w.getId()))
                         .count();
                     
@@ -859,7 +859,7 @@ public class QRAnalyticsService {
 
     private Long getTotalQueries(LocalDateTime startDate, LocalDateTime endDate, String plantCode) {
         try {
-            List<Query> queries = queryRepository.findAll();
+            List<Query> queries = queryRepository.findAllWithWorkflow();
             
             return queries.stream()
                 .filter(q -> startDate == null || q.getCreatedAt().isAfter(startDate) || q.getCreatedAt().isEqual(startDate))
@@ -874,7 +874,7 @@ public class QRAnalyticsService {
 
     private Long getOpenQueries(LocalDateTime startDate, LocalDateTime endDate, String plantCode) {
         try {
-            List<Query> queries = queryRepository.findAll();
+            List<Query> queries = queryRepository.findAllWithWorkflow();
             
             return queries.stream()
                 .filter(q -> q.getStatus().isActive()) // Use new isActive() method
@@ -890,7 +890,7 @@ public class QRAnalyticsService {
 
     private Long getOverdueQueries(LocalDateTime startDate, LocalDateTime endDate, String plantCode) {
         try {
-            List<Query> queries = queryRepository.findAll();
+            List<Query> queries = queryRepository.findAllWithWorkflow();
             LocalDateTime cutoffDate = LocalDateTime.now().minusDays(2); // Overdue if older than 2 days
             
             return queries.stream()
@@ -998,7 +998,7 @@ public class QRAnalyticsService {
     
     private Double getOverallSlaCompliance(LocalDateTime startDate, LocalDateTime endDate, String plantCode) {
         try {
-            List<Query> queries = queryRepository.findAll();
+            List<Query> queries = queryRepository.findAllWithWorkflow();
             
             List<Query> resolvedQueries = queries.stream()
                 .filter(q -> q.getStatus() == QueryStatus.RESOLVED)
@@ -1025,7 +1025,7 @@ public class QRAnalyticsService {
 
     private Long getResolvedQueries(LocalDateTime startDate, LocalDateTime endDate, String plantCode) {
         try {
-            List<Query> queries = queryRepository.findAll();
+            List<Query> queries = queryRepository.findAllWithWorkflow();
             
             return queries.stream()
                 .filter(q -> q.getStatus() == QueryStatus.RESOLVED)
@@ -1043,7 +1043,7 @@ public class QRAnalyticsService {
     
     private Map<String, Object> getSlaComplianceByTeam(LocalDateTime startDate, LocalDateTime endDate, String plantCode) {
         try {
-            List<Query> queries = queryRepository.findAll();
+            List<Query> queries = queryRepository.findAllWithWorkflow();
             
             // Filter queries by date range and plant
             List<Query> filteredQueries = queries.stream()
@@ -1081,7 +1081,7 @@ public class QRAnalyticsService {
 
     private Map<String, Object> getAverageResolutionTimesByTeam(LocalDateTime startDate, LocalDateTime endDate, String plantCode) {
         try {
-            List<Query> queries = queryRepository.findAll();
+            List<Query> queries = queryRepository.findAllWithWorkflow();
             
             // Filter queries by date range and plant
             List<Query> filteredQueries = queries.stream()
@@ -1118,7 +1118,7 @@ public class QRAnalyticsService {
 
     private Map<String, Object> getTotalQueriesByTeam(LocalDateTime startDate, LocalDateTime endDate, String plantCode) {
         try {
-            List<Query> queries = queryRepository.findAll();
+            List<Query> queries = queryRepository.findAllWithWorkflow();
             
             // Filter queries by date range and plant
             List<Query> filteredQueries = queries.stream()
@@ -1143,7 +1143,7 @@ public class QRAnalyticsService {
 
     private Map<String, Object> getResolvedQueriesByTeam(LocalDateTime startDate, LocalDateTime endDate, String plantCode) {
         try {
-            List<Query> queries = queryRepository.findAll();
+            List<Query> queries = queryRepository.findAllWithWorkflow();
             
             // Filter queries by date range and plant
             List<Query> filteredQueries = queries.stream()
@@ -1169,7 +1169,7 @@ public class QRAnalyticsService {
 
     private Map<String, Object> getOverdueQueriesByTeam(LocalDateTime startDate, LocalDateTime endDate, String plantCode) {
         try {
-            List<Query> queries = queryRepository.findAll();
+            List<Query> queries = queryRepository.findAllWithWorkflow();
             LocalDateTime cutoffDate = LocalDateTime.now().minusDays(3); // Overdue if older than 3 days
             
             // Filter queries by date range and plant
@@ -1248,7 +1248,7 @@ public class QRAnalyticsService {
 
     private Map<String, Object> getOpenQueriesByTeam(LocalDateTime startDate, LocalDateTime endDate, String plantCode) {
         try {
-            List<Query> queries = queryRepository.findAll();
+            List<Query> queries = queryRepository.findAllWithWorkflow();
             
             Map<String, Long> openQueriesByTeam = queries.stream()
                 .filter(q -> q.getStatus().isActive()) // Use the new isActive() method
@@ -1332,7 +1332,7 @@ public class QRAnalyticsService {
                 .filter(w -> plantCode == null || plantCode.trim().isEmpty() || plantCode.equals(w.getPlantCode()))
                 .map(w -> {
                     // Count queries for this workflow using the query repository
-                    List<Query> workflowQueries = queryRepository.findAll().stream()
+                    List<Query> workflowQueries = queryRepository.findAllWithWorkflow().stream()
                         .filter(q -> q.getWorkflow() != null && q.getWorkflow().getId().equals(w.getId()))
                         .collect(Collectors.toList());
                     return (double) workflowQueries.size();
@@ -1383,7 +1383,7 @@ public class QRAnalyticsService {
         final LocalDateTime finalEndDate = endDate;
 
         try {
-            List<Query> queries = queryRepository.findAll();
+            List<Query> queries = queryRepository.findAllWithWorkflow();
             
             // Filter queries by date range and plant
             List<Query> filteredQueries = queries.stream()
@@ -1476,7 +1476,7 @@ public class QRAnalyticsService {
     
     private List<Map<String, Object>> getTopQueryResolvers(LocalDateTime startDate, LocalDateTime endDate, String plantCode) {
         try {
-            List<Query> queries = queryRepository.findAll();
+            List<Query> queries = queryRepository.findAllWithWorkflow();
             
             // Filter queries by date range and plant
             List<Query> filteredQueries = queries.stream()
@@ -1530,20 +1530,15 @@ public class QRAnalyticsService {
                 .filter(w -> plantCode == null || plantCode.trim().isEmpty() || plantCode.equals(w.getPlantCode()))
                 .collect(Collectors.toList());
             
-            // Group by creator and count
+            // Group by creator (user) and count - only show actual users, not plants
             Map<String, Long> creatorCounts = filteredWorkflows.stream()
-                .filter(w -> w.getCreatedBy() != null)
+                .filter(w -> w.getCreatedBy() != null && !w.getCreatedBy().trim().isEmpty())
                 .collect(Collectors.groupingBy(Workflow::getCreatedBy, Collectors.counting()));
             
-            // Group by plant and count
-            Map<String, Long> plantCounts = filteredWorkflows.stream()
-                .filter(w -> w.getPlantCode() != null)
-                .collect(Collectors.groupingBy(Workflow::getPlantCode, Collectors.counting()));
-            
-            // Convert to ranked list
-            List<Map<String, Object>> topCreators = creatorCounts.entrySet().stream()
+            // Convert to ranked list of users only
+            return creatorCounts.entrySet().stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                .limit(10)
+                .limit(15)
                 .map(entry -> {
                     Map<String, Object> creator = new HashMap<>();
                     creator.put("name", entry.getKey());
@@ -1560,37 +1555,6 @@ public class QRAnalyticsService {
                     
                     return creator;
                 })
-                .collect(Collectors.toList());
-            
-            // Add plant rankings
-            List<Map<String, Object>> topPlants = plantCounts.entrySet().stream()
-                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                .map(entry -> {
-                    Map<String, Object> plant = new HashMap<>();
-                    plant.put("name", entry.getKey() + " Plant");
-                    plant.put("count", entry.getValue());
-                    plant.put("type", "plant");
-                    
-                    // Calculate completion rate for this plant
-                    long completed = filteredWorkflows.stream()
-                        .filter(w -> entry.getKey().equals(w.getPlantCode()))
-                        .filter(w -> w.getState() == WorkflowState.COMPLETED)
-                        .count();
-                    double completionRate = entry.getValue() > 0 ? (double) completed / entry.getValue() * 100.0 : 0.0;
-                    plant.put("completionRate", Math.round(completionRate * 100.0) / 100.0);
-                    
-                    return plant;
-                })
-                .collect(Collectors.toList());
-            
-            // Combine and return top performers
-            List<Map<String, Object>> combined = new ArrayList<>();
-            combined.addAll(topCreators);
-            combined.addAll(topPlants);
-            
-            return combined.stream()
-                .sorted((a, b) -> Long.compare((Long) b.get("count"), (Long) a.get("count")))
-                .limit(15)
                 .collect(Collectors.toList());
                 
         } catch (Exception e) {
@@ -1682,7 +1646,7 @@ public class QRAnalyticsService {
     
     private Map<String, Object> getTeamPerformanceComparison(LocalDateTime startDate, LocalDateTime endDate, String plantCode) {
         try {
-            List<Query> queries = queryRepository.findAll();
+            List<Query> queries = queryRepository.findAllWithWorkflow();
             
             // Filter queries by date range and plant
             List<Query> filteredQueries = queries.stream()
