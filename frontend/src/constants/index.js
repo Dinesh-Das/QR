@@ -184,8 +184,8 @@ export const TEAM_NAMES = {
 
 // Auto-save intervals
 export const AUTO_SAVE = {
-  INTERVAL: 30000, // 30 seconds
-  DEBOUNCE_DELAY: 2000 // 2 seconds
+  INTERVAL: 40000, // 40 seconds
+  DEBOUNCE_DELAY: 15000 // 15 seconds
 };
 
 // Pagination defaults

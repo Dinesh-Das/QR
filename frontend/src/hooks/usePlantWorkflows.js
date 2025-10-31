@@ -78,14 +78,14 @@ export const usePlantWorkflows = (currentPlant, userPlantData) => {
         workflowsWithProgress = dashboardData.workflows
           .filter(workflow => workflow.plantCode === plantCode) // Only show workflows for current plant
           .map(workflow => {
-            // Recalculate progress with correct field counts (excluding CQS auto-populated fields)
-            const correctedWorkflow = recalculateWorkflowProgress(workflow, workflow.plantInputs);
+            // Use backend's calculation directly (it's now correct)
+            // Don't recalculate in frontend to avoid field name mismatches
             
             // Determine the correct completion status based on actual progress
             let completionStatus;
-            if (workflow.isSubmitted || correctedWorkflow.completionPercentage === 100) {
+            if (workflow.isSubmitted || workflow.completionPercentage === 100) {
               completionStatus = 'COMPLETED';
-            } else if (correctedWorkflow.completionPercentage > 0) {
+            } else if (workflow.completionPercentage > 0) {
               completionStatus = 'IN_PROGRESS';
             } else {
               completionStatus = 'DRAFT';
@@ -99,9 +99,9 @@ export const usePlantWorkflows = (currentPlant, userPlantData) => {
                 ? WORKFLOW_STATES.COMPLETED
                 : WORKFLOW_SPECIFIC_STATES.PLANT_PENDING,
               completionStatus,
-              completionPercentage: correctedWorkflow.completionPercentage,
-              totalFields: correctedWorkflow.totalFields,
-              completedFields: correctedWorkflow.completedFields,
+              completionPercentage: workflow.completionPercentage, // Use backend's calculation
+              totalFields: workflow.totalFields, // Use backend's calculation
+              completedFields: workflow.completedFields, // Use backend's calculation
               requiredFields: workflow.requiredFields || 0,
               completedRequiredFields: workflow.completedRequiredFields || 0,
               lastModified: workflow.lastModified,

@@ -57,22 +57,22 @@ CREATE UNIQUE INDEX IDX_QRMFG_QUEST_TEMPLATE_SR ON QRMFG_QUESTION_TEMPLATES(SR_N
 -- Insert complete questionnaire data (ID = SR_NO for all records)
 -- General Section (1-7)
 INSERT INTO QRMFG_QUESTION_TEMPLATES (ID, SR_NO, CATEGORY, QUESTION_TEXT, COMMENTS, RESPONSIBLE, QUESTION_TYPE, STEP_NUMBER, FIELD_NAME, ORDER_INDEX, IS_REQUIRED, VERSION) 
-VALUES (1, 1, 'General', 'Is 16 Section MSDS of the raw material available?', 'Not applicable', 'NONE', 'DISPLAY', 1, 'question_1', 1, 0, 1);
+VALUES (1, 1, 'General', 'Is 16 Section MSDS of the raw material available?', 'Not applicable', 'Plant', 'DISPLAY', 1, 'question_1', 1, 0, 1);
 
 INSERT INTO QRMFG_QUESTION_TEMPLATES (ID, SR_NO, CATEGORY, QUESTION_TEXT, COMMENTS, RESPONSIBLE, QUESTION_TYPE, STEP_NUMBER, FIELD_NAME, ORDER_INDEX, IS_REQUIRED, VERSION) 
-VALUES (2, 2, 'General', 'Which information in any one of the 16 sections is not available in full?', 'Not applicable', 'NONE', 'DISPLAY', 1, 'question_2', 2, 0, 1);
+VALUES (2, 2, 'General', 'Which information in any one of the 16 sections is not available in full?', 'Not applicable', 'Plant', 'DISPLAY', 1, 'question_2', 2, 0, 1);
 
 INSERT INTO QRMFG_QUESTION_TEMPLATES (ID, SR_NO, CATEGORY, QUESTION_TEXT, COMMENTS, RESPONSIBLE, QUESTION_TYPE, STEP_NUMBER, FIELD_NAME, ORDER_INDEX, IS_REQUIRED, VERSION) 
-VALUES (3, 3, 'General', 'Has the identified missing / more information required from the supplier asked thru Sourcing?', 'Not applicable', 'NONE', 'DISPLAY', 1, 'question_3', 3, 0, 1);
+VALUES (3, 3, 'General', 'Has the identified missing / more information required from the supplier asked thru Sourcing?', 'Not applicable', 'Plant', 'DISPLAY', 1, 'question_3', 3, 0, 1);
 
 INSERT INTO QRMFG_QUESTION_TEMPLATES (ID, SR_NO, CATEGORY, QUESTION_TEXT, COMMENTS, RESPONSIBLE, QUESTION_TYPE, STEP_NUMBER, FIELD_NAME, ORDER_INDEX, IS_REQUIRED, VERSION) 
-VALUES (4, 4, 'General', 'Is CAS number of the raw material based on the pure substance available?', 'Not applicable', 'NONE', 'DISPLAY', 1, 'question_4', 4, 0, 1);
+VALUES (4, 4, 'General', 'Is CAS number of the raw material based on the pure substance available?', 'Not applicable', 'Plant', 'DISPLAY', 1, 'question_4', 4, 0, 1);
 
 INSERT INTO QRMFG_QUESTION_TEMPLATES (ID, SR_NO, CATEGORY, QUESTION_TEXT, COMMENTS, RESPONSIBLE, QUESTION_TYPE, STEP_NUMBER, FIELD_NAME, ORDER_INDEX, IS_REQUIRED, VERSION) 
-VALUES (5, 5, 'General', 'For mixtures, are ingredients of mixture available?', 'Not applicable', 'NONE', 'DISPLAY', 1, 'question_5', 5, 0, 1);
+VALUES (5, 5, 'General', 'For mixtures, are ingredients of mixture available?', 'Not applicable', 'Plant', 'DISPLAY', 1, 'question_5', 5, 0, 1);
 
 INSERT INTO QRMFG_QUESTION_TEMPLATES (ID, SR_NO, CATEGORY, QUESTION_TEXT, COMMENTS, RESPONSIBLE, QUESTION_TYPE, STEP_NUMBER, FIELD_NAME, ORDER_INDEX, IS_REQUIRED, VERSION) 
-VALUES (6, 6, 'General', 'Is % age composition substances in the mixture available?', 'Not applicable', 'NONE', 'DISPLAY', 1, 'question_6', 6, 0, 1);
+VALUES (6, 6, 'General', 'Is % age composition substances in the mixture available?', 'Not applicable', 'Plant', 'DISPLAY', 1, 'question_6', 6, 0, 1);
 
 INSERT INTO QRMFG_QUESTION_TEMPLATES (ID, SR_NO, CATEGORY, QUESTION_TEXT, COMMENTS, RESPONSIBLE, QUESTION_TYPE, STEP_NUMBER, FIELD_NAME, ORDER_INDEX, IS_REQUIRED, VERSION) 
 VALUES (7, 7, 'General', 'Is the total %age of all substances in the mixture equal to 100? If not what is the % of substances not available?', 'Not applicable', 'NONE', 'DISPLAY', 1, 'question_7', 7, 0, 1);

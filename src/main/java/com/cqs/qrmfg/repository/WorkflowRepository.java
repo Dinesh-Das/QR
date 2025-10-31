@@ -154,4 +154,7 @@ public interface WorkflowRepository extends JpaRepository<Workflow, Long> {
     List<Workflow> findByMaterialCode(String materialCode);
     boolean existsByMaterialCode(String materialCode);
     boolean existsByProjectCodeAndMaterialCodeAndPlantCode(String projectCode, String materialCode, String plantCode);
+    
+    // Plant questionnaire specific methods
+    List<Workflow> findByPlantCodeAndMaterialCode(String plantCode, String materialCode);
 }

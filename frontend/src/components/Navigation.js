@@ -142,7 +142,7 @@ const Navigation = () => {
         }}
       >
         <div style={{ fontSize: collapsed ? 14 : 20, fontWeight: 'bold' }}>
-          {collapsed ? 'QR' : 'QR Manufacturing'}
+          {collapsed ? 'QR' : '[QR][MFG][012]'}
         </div>
         {!collapsed && userInfo && (
           <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>

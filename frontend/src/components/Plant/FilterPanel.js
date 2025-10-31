@@ -166,30 +166,7 @@ const FilterPanel = React.memo(({
         </Col>
       </Row>
 
-      {/* Filter Presets */}
-      {filterPresets && filterPresets.length > 0 && (
-        <>
-          <Divider style={{ margin: '12px 0' }} />
-          <div style={{ marginBottom: 8 }}>
-            <span style={{ fontSize: '12px', fontWeight: '500', color: '#666' }}>
-              Quick Filters:
-            </span>
-          </div>
-          <Space wrap>
-            {filterPresets.map((preset) => (
-              <Button
-                key={preset.name}
-                size="small"
-                type="default"
-                onClick={() => handlePresetClick(preset.name)}
-                style={{ fontSize: '12px' }}
-              >
-                {preset.name}
-              </Button>
-            ))}
-          </Space>
-        </>
-      )}
+
 
       {/* Active Filters Summary */}
       {filterSummary?.hasActiveFilters && (

@@ -43,13 +43,13 @@ public class QuestionnaireTemplateInitializer implements CommandLineRunner {
     private void initializeDefaultTemplate() {
         List<QuestionTemplate> templates = Arrays.asList(
             // General (Step 1)
-            createTemplate(1, 1, "General", "Is 16 Section MSDS of the raw material available?", "Is 16 Section MSDS of the raw material available?", "NONE", "radio", "msds_available", false, "[{\"value\":\"yes\",\"label\":\"Yes\"},{\"value\":\"no\",\"label\":\"No\"}]"),
-            createTemplate(2, 1, "General", "Which information in any one of the 16 sections is not available in full?", "Which information in any one of the 16 sections is not available in full?", "NONE", "textarea", "missing_info", false, null),
-            createTemplate(3, 1, "General", "Has the identified missing / more information required from the supplier asked thru Sourcing?", "Has the identified missing / more information required from the supplier asked thru Sourcing?", "NONE", "radio", "sourcing_asked", false, "[{\"value\":\"yes\",\"label\":\"Yes\"},{\"value\":\"no\",\"label\":\"No\"},{\"value\":\"na\",\"label\":\"N/A\"}]"),
-            createTemplate(4, 1, "General", "Is CAS number of the raw material based on the pure substance available?", "Is CAS number of the raw material based on the pure substance available?", "NONE", "radio", "cas_available", false, "[{\"value\":\"yes\",\"label\":\"Yes\"},{\"value\":\"no\",\"label\":\"No\"}]"),
-            createTemplate(5, 1, "General", "For mixtures, are ingredients of mixture available?", "For mixtures, are ingredients of mixture available?", "NONE", "radio", "mixture_ingredients", false, "[{\"value\":\"yes\",\"label\":\"Yes\"},{\"value\":\"no\",\"label\":\"No\"},{\"value\":\"na\",\"label\":\"N/A\"}]"),
-            createTemplate(6, 1, "General", "Is % age composition substances in the mixture available?", "Is % age composition substances in the mixture available?", "NONE", "radio", "composition_percentage", false, "[{\"value\":\"yes\",\"label\":\"Yes\"},{\"value\":\"no\",\"label\":\"No\"},{\"value\":\"na\",\"label\":\"N/A\"}]"),
-            createTemplate(7, 1, "General", "Is the total %age of all substances in the mixture equal to 100? If not what is the % of substances not available?", "Is the total %age of all substances in the mixture equal to 100? If not what is the % of substances not available?", "NONE", "textarea", "total_percentage", false, null),
+            createTemplate(1, 1, "General", "Is 16 Section MSDS of the raw material available?", "Is 16 Section MSDS of the raw material available?", "Plant", "radio", "msds_available", false, "[{\"value\":\"yes\",\"label\":\"Yes\"},{\"value\":\"no\",\"label\":\"No\"}]"),
+            createTemplate(2, 1, "General", "Which information in any one of the 16 sections is not available in full?", "Which information in any one of the 16 sections is not available in full?", "Plant", "textarea", "missing_info", false, null),
+            createTemplate(3, 1, "General", "Has the identified missing / more information required from the supplier asked thru Sourcing?", "Has the identified missing / more information required from the supplier asked thru Sourcing?", "Plant", "radio", "sourcing_asked", false, "[{\"value\":\"yes\",\"label\":\"Yes\"},{\"value\":\"no\",\"label\":\"No\"},{\"value\":\"na\",\"label\":\"N/A\"}]"),
+            createTemplate(4, 1, "General", "Is CAS number of the raw material based on the pure substance available?", "Is CAS number of the raw material based on the pure substance available?", "Plant", "radio", "cas_available", false, "[{\"value\":\"yes\",\"label\":\"Yes\"},{\"value\":\"no\",\"label\":\"No\"}]"),
+            createTemplate(5, 1, "General", "For mixtures, are ingredients of mixture available?", "For mixtures, are ingredients of mixture available?", "Plant", "radio", "mixture_ingredients", false, "[{\"value\":\"yes\",\"label\":\"Yes\"},{\"value\":\"no\",\"label\":\"No\"},{\"value\":\"na\",\"label\":\"N/A\"}]"),
+            createTemplate(6, 1, "General", "Is % age composition substances in the mixture available?", "Is % age composition substances in the mixture available?", "Plant", "radio", "composition_percentage", false, "[{\"value\":\"yes\",\"label\":\"Yes\"},{\"value\":\"no\",\"label\":\"No\"},{\"value\":\"na\",\"label\":\"N/A\"}]"),
+            createTemplate(7, 1, "General", "Is the total %age of all substances in the mixture equal to 100? If not what is the % of substances not available?", "Is the total %age of all substances in the mixture equal to 100? If not what is the % of substances not available?", "Plant", "textarea", "total_percentage", false, null),
 
             // Physical (Step 2)
             createTemplate(8, 2, "Physical", "Is the material corrosive?", "Is the material corrosive?", "CQS", "radio", "is_corrosive", false, "[{\"value\":\"yes\",\"label\":\"Yes\"},{\"value\":\"no\",\"label\":\"No\"}]"),
@@ -144,14 +144,14 @@ public class QuestionnaireTemplateInitializer implements CommandLineRunner {
             createTemplate(79, 11, "Statutory", "Does the plant have valid license to handle / store the raw material?", "Does the plant have valid license to handle / store the raw material?", "Plant", "radio", "valid_license", false, "[{\"value\":\"yes\",\"label\":\"Yes\"},{\"value\":\"no\",\"label\":\"No\"},{\"value\":\"na\",\"label\":\"N/A\"}]"),
 
             // Others (Step 12)
-            createTemplate(80, 12, "Others", "Inputs required from plants based on the above assessment?", "Inputs required from plants based on the above assessment?", "Plant", "textarea", "plant_inputs_required", false, null),
-            createTemplate(81, 12, "Others", "Gaps identified vis-à-vis existing controls / protocols", "Gaps identified vis-à-vis existing controls / protocols", "Plant", "textarea", "gaps_identified", false, null),
-            createTemplate(82, 12, "Others", "1", "Additional input 1", "Plant", "textarea", "additional_input_1", false, null),
-            createTemplate(83, 12, "Others", "2", "Additional input 2", "Plant", "textarea", "additional_input_2", false, null),
-            createTemplate(84, 12, "Others", "3", "Additional input 3", "Plant", "textarea", "additional_input_3", false, null),
-            createTemplate(85, 12, "Others", "4", "Additional input 4", "Plant", "textarea", "additional_input_4", false, null),
-            createTemplate(86, 12, "Others", "5", "Additional input 5", "Plant", "textarea", "additional_input_5", false, null),
-            createTemplate(87, 12, "Others", "6", "Additional input 6", "Plant", "textarea", "additional_input_6", false, null)
+            createTemplate(80, 12, "GAPS", "Inputs required from plants based on the above assessment?", "Inputs required from plants based on the above assessment?", "Plant", "textarea", "plant_inputs_required", false, null),
+            createTemplate(81, 12, "GAPS", "Gaps identified vis-à-vis existing controls / protocols", "Gaps identified vis-à-vis existing controls / protocols", "Plant", "textarea", "gaps_identified", false, null),
+            createTemplate(82, 12, "GAPS", "1", "Additional input 1", "Plant", "textarea", "additional_input_1", false, null),
+            createTemplate(83, 12, "GAPS", "2", "Additional input 2", "Plant", "textarea", "additional_input_2", false, null),
+            createTemplate(84, 12, "GAPS", "3", "Additional input 3", "Plant", "textarea", "additional_input_3", false, null),
+            createTemplate(85, 12, "GAPS", "4", "Additional input 4", "Plant", "textarea", "additional_input_4", false, null),
+            createTemplate(86, 12, "GAPS", "5", "Additional input 5", "Plant", "textarea", "additional_input_5", false, null),
+            createTemplate(87, 12, "GAPS", "6", "Additional input 6", "Plant", "textarea", "additional_input_6", false, null)
         );
 
         questionTemplateRepository.saveAll(templates);

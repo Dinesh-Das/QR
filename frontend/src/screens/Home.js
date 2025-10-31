@@ -40,7 +40,7 @@ const Home = () => (
     >
       <RocketOutlined style={{ fontSize: 48, marginBottom: 16 }} />
       <Title level={1} style={{ color: 'white', marginBottom: 16 }}>
-        QRMFG - Quality Risk Management for Manufacturing
+        [QR][MFG][012] - EVALUATION OF RM BASED ON INTRINSIC HAZARDS, IDENTIFICATION OF GAPS AND CLOSURE OF GAPS
       </Title>
       <Paragraph
         style={{ color: 'rgba(255,255,255,0.9)', fontSize: 18, maxWidth: 800, margin: '0 auto' }}

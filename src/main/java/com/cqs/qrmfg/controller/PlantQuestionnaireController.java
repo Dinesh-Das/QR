@@ -210,13 +210,7 @@ public class PlantQuestionnaireController {
             System.out.println("PlantQuestionnaireController: Saving draft for " + plantCode + "/" + materialCode + 
                              " with " + (responses != null ? responses.size() : 0) + " responses");
             
-            // CRITICAL DEBUG: Log field names and sample values received from frontend
-            if (responses != null && !responses.isEmpty()) {
-                System.out.println("PlantQuestionnaireController: Field names received: " + responses.keySet());
-                System.out.println("PlantQuestionnaireController: Sample field values: " + 
-                                 responses.entrySet().stream().limit(5).collect(Collectors.toMap(
-                                     Map.Entry::getKey, Map.Entry::getValue)));
-            }
+
             
             // Validate required parameters
             if (plantCode == null || materialCode == null) {
@@ -670,6 +664,70 @@ public class PlantQuestionnaireController {
         }
     }
     
+    /**
+     * Debug endpoint to fix completion status mismatch
+     */
+    @PostMapping("/fix-completion-status/{plantCode}/{materialCode}")
+    public ResponseEntity<Map<String, Object>> fixCompletionStatus(
+            @PathVariable String plantCode, 
+            @PathVariable String materialCode) {
+        try {
+            System.out.println("PlantQuestionnaireController: Fixing completion status for " + plantCode + "/" + materialCode);
+            
+            // Step 1: Force recalculate completion stats
+            plantQuestionnaireService.recalculateCompletionStats(materialCode, plantCode);
+            
+            // Step 2: Get current status
+            Map<String, Object> currentStatus = plantQuestionnaireService.getQuestionnaireStatus(plantCode, materialCode);
+            
+            // Step 3: If submitted but completion percentage is low, force it to 100%
+            boolean isSubmitted = (Boolean) currentStatus.getOrDefault("isSubmitted", false);
+            Integer completionPercentage = (Integer) currentStatus.getOrDefault("completionPercentage", 0);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Completion status analysis completed");
+            response.put("materialCode", materialCode);
+            response.put("plantCode", plantCode);
+            response.put("timestamp", LocalDateTime.now());
+            response.put("wasSubmitted", isSubmitted);
+            response.put("originalCompletionPercentage", completionPercentage);
+            
+            if (isSubmitted && completionPercentage < 100) {
+                // Force completion to 100% for submitted questionnaires
+                PlantSpecificDataDto plantData = plantQuestionnaireService.getPlantSpecificData(plantCode, materialCode);
+                if (plantData != null) {
+                    plantData.setCompletionPercentage(100);
+                    plantData.setCompletionStatus("COMPLETED");
+                    plantQuestionnaireService.savePlantSpecificData(plantData, "SYSTEM_FIX");
+                    
+                    response.put("action", "Forced completion percentage to 100% for submitted questionnaire");
+                    response.put("newCompletionPercentage", 100);
+                }
+            } else if (isSubmitted) {
+                response.put("action", "No fix needed - submitted questionnaire already at " + completionPercentage + "%");
+            } else {
+                response.put("action", "No fix needed - questionnaire not submitted yet");
+            }
+            
+            // Get final stats
+            Map<String, Object> finalStats = plantQuestionnaireService.getCompletionStats(materialCode, plantCode);
+            response.put("finalStats", finalStats);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("PlantQuestionnaireController: Failed to fix completion status: " + e.getMessage());
+            e.printStackTrace();
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to fix completion status");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("materialCode", materialCode);
+            errorResponse.put("plantCode", plantCode);
+            
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+    
 
     /**
      * Compare frontend fields with backend template
@@ -786,323 +844,28 @@ public class PlantQuestionnaireController {
     }
 
     /**
-     * Debug completion calculation - shows detailed field-by-field analysis
+     * Fix workflow status for completed questionnaires (admin/debugging endpoint)
      */
-    @GetMapping("/debug-completion/{plantCode}/{materialCode}")
-    public ResponseEntity<Map<String, Object>> debugCompletion(
-            @PathVariable String plantCode, 
-            @PathVariable String materialCode) {
+    @PostMapping("/fix-workflow-status")
+    public ResponseEntity<Map<String, Object>> fixWorkflowStatus(
+            @RequestParam String plantCode,
+            @RequestParam String materialCode,
+            @RequestParam(defaultValue = "SYSTEM") String updatedBy) {
+        
         try {
-            System.out.println("PlantQuestionnaireController: Debug completion for " + plantCode + "/" + materialCode);
+            Map<String, Object> result = plantQuestionnaireService.fixWorkflowStatusForCompletedQuestionnaire(
+                plantCode, materialCode, updatedBy);
             
-            // Force recalculation first
-            plantQuestionnaireService.recalculateCompletionStats(materialCode, plantCode);
-            
-            // Get updated stats
-            Map<String, Object> stats = plantQuestionnaireService.getCompletionStats(materialCode, plantCode);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Completion debug completed - check server logs for detailed field analysis");
-            response.put("stats", stats);
-            response.put("plantCode", plantCode);
-            response.put("materialCode", materialCode);
-            response.put("timestamp", LocalDateTime.now());
-            
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            System.err.println("PlantQuestionnaireController: Debug completion failed: " + e.getMessage());
-            e.printStackTrace();
-            
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Debug completion failed");
-            errorResponse.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
-    }
-
-    /**
-     * Debug endpoint to compare frontend field names with backend template
-     */
-    @GetMapping("/debug-fields/{plantCode}/{materialCode}")
-    public ResponseEntity<Map<String, Object>> debugFieldMatching(
-            @PathVariable String plantCode, 
-            @PathVariable String materialCode) {
-        try {
-            // Get template for field comparison
-            QuestionnaireTemplateDto template = plantQuestionnaireService.getQuestionnaireTemplate(
-                materialCode, plantCode, "PLANT_QUESTIONNAIRE");
-            
-            // Get plant data for inspection
-            PlantSpecificDataDto plantData = plantQuestionnaireService.getPlantSpecificData(plantCode, materialCode);
-            
-            Map<String, Object> response = new HashMap<>();
-            
-            // Template field analysis
-            if (template != null) {
-                List<String> allTemplateFields = new ArrayList<>();
-                List<String> plantTemplateFields = new ArrayList<>();
-                List<String> cqsTemplateFields = new ArrayList<>();
-                
-                for (QuestionnaireStepDto step : template.getSteps()) {
-                    for (QuestionnaireFieldDto field : step.getFields()) {
-                        allTemplateFields.add(field.getName());
-                        if (field.isCqsAutoPopulated()) {
-                            cqsTemplateFields.add(field.getName());
-                        } else {
-                            plantTemplateFields.add(field.getName());
-                        }
-                    }
-                }
-                
-                Map<String, Object> templateInfo = new HashMap<>();
-                templateInfo.put("totalFields", allTemplateFields.size());
-                templateInfo.put("plantFields", plantTemplateFields.size());
-                templateInfo.put("cqsFields", cqsTemplateFields.size());
-                templateInfo.put("allFieldNames", allTemplateFields);
-                templateInfo.put("plantFieldNames", plantTemplateFields);
-                templateInfo.put("cqsFieldNames", cqsTemplateFields);
-                response.put("template", templateInfo);
+            if ((Boolean) result.get("success")) {
+                return ResponseEntity.ok(result);
+            } else {
+                return ResponseEntity.badRequest().body(result);
             }
-            
-            // Plant data analysis
-            if (plantData != null && plantData.getPlantInputs() != null) {
-                Set<String> plantInputKeys = plantData.getPlantInputs().keySet();
-                Map<String, Object> plantDataInfo = new HashMap<>();
-                plantDataInfo.put("inputFieldCount", plantInputKeys.size());
-                plantDataInfo.put("inputFieldNames", new ArrayList<>(plantInputKeys));
-                
-                // Show sample values for debugging
-                Map<String, Object> sampleValues = new HashMap<>();
-                plantData.getPlantInputs().entrySet().stream()
-                    .limit(10)
-                    .forEach(entry -> sampleValues.put(entry.getKey(), entry.getValue()));
-                plantDataInfo.put("sampleValues", sampleValues);
-                
-                response.put("plantData", plantDataInfo);
-                
-                // Field matching analysis
-                if (template != null) {
-                    List<String> matchedFields = new ArrayList<>();
-                    List<String> unmatchedPlantInputs = new ArrayList<>();
-                    List<String> unmatchedTemplateFields = new ArrayList<>();
-                    
-                    // Check which plant inputs match template fields
-                    for (String inputKey : plantInputKeys) {
-                        boolean found = false;
-                        for (QuestionnaireStepDto step : template.getSteps()) {
-                            for (QuestionnaireFieldDto field : step.getFields()) {
-                                if (field.getName().equals(inputKey)) {
-                                    matchedFields.add(inputKey);
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            if (found) break;
-                        }
-                        if (!found) {
-                            unmatchedPlantInputs.add(inputKey);
-                        }
-                    }
-                    
-                    // Check which template fields don't have plant inputs
-                    for (QuestionnaireStepDto step : template.getSteps()) {
-                        for (QuestionnaireFieldDto field : step.getFields()) {
-                            if (!field.isCqsAutoPopulated() && !plantInputKeys.contains(field.getName())) {
-                                unmatchedTemplateFields.add(field.getName());
-                            }
-                        }
-                    }
-                    
-                    Map<String, Object> matchingInfo = new HashMap<>();
-                    matchingInfo.put("matchedFields", matchedFields);
-                    matchingInfo.put("matchedCount", matchedFields.size());
-                    matchingInfo.put("unmatchedPlantInputs", unmatchedPlantInputs);
-                    matchingInfo.put("unmatchedTemplateFields", unmatchedTemplateFields);
-                    matchingInfo.put("unmatchedTemplateCount", unmatchedTemplateFields.size());
-                    response.put("fieldMatching", matchingInfo);
-                }
-            }
-            
-            response.put("timestamp", LocalDateTime.now());
-            response.put("materialCode", materialCode);
-            response.put("plantCode", plantCode);
-            
-            return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to debug field matching");
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Fix workflow status failed");
             errorResponse.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
-    }
-    
-    /**
-     * Test validation endpoint to debug completion calculation
-     */
-    @GetMapping("/test-validation/{plantCode}/{materialCode}")
-    public ResponseEntity<Map<String, Object>> testValidation(
-            @PathVariable String plantCode, 
-            @PathVariable String materialCode) {
-        try {
-            // Force recalculation first
-            plantQuestionnaireService.recalculateCompletionStats(materialCode, plantCode);
-            
-            // Get validation result
-            PlantQuestionnaireService.ValidationResult validation = 
-                plantQuestionnaireService.validateQuestionnaireCompletion(plantCode, materialCode);
-            
-            // Get plant data for inspection
-            PlantSpecificDataDto plantData = plantQuestionnaireService.getPlantSpecificData(plantCode, materialCode);
-            
-            // Get template for field comparison
-            QuestionnaireTemplateDto template = plantQuestionnaireService.getQuestionnaireTemplate(
-                materialCode, plantCode, "PLANT_QUESTIONNAIRE");
-            
-            Map<String, Object> response = new HashMap<>();
-            Map<String, Object> validationInfo = new HashMap<>();
-            validationInfo.put("isValid", validation.isValid());
-            validationInfo.put("message", validation.getMessage());
-            validationInfo.put("completionPercentage", validation.getCompletionPercentage());
-            validationInfo.put("missingFieldsCount", validation.getMissingFields().size());
-            validationInfo.put("missingFields", validation.getMissingFields());
-            response.put("validation", validationInfo);
-            
-            if (plantData != null) {
-                Map<String, Object> plantDataInfo = new HashMap<>();
-                plantDataInfo.put("totalFields", plantData.getTotalFields() != null ? plantData.getTotalFields() : 0);
-                plantDataInfo.put("completedFields", plantData.getCompletedFields() != null ? plantData.getCompletedFields() : 0);
-                plantDataInfo.put("plantInputsSize", plantData.getPlantInputs() != null ? plantData.getPlantInputs().size() : 0);
-                plantDataInfo.put("cqsInputsSize", plantData.getCqsInputs() != null ? plantData.getCqsInputs().size() : 0);
-                plantDataInfo.put("completionPercentage", plantData.getCompletionPercentage() != null ? plantData.getCompletionPercentage() : 0);
-                
-                // Show actual plant input keys vs template field names
-                if (plantData.getPlantInputs() != null) {
-                    plantDataInfo.put("plantInputKeys", new ArrayList<>(plantData.getPlantInputs().keySet()));
-                }
-                response.put("plantData", plantDataInfo);
-            }
-            
-            // Show template field names for comparison
-            if (template != null) {
-                List<String> templateFieldNames = new ArrayList<>();
-                List<String> plantFieldNames = new ArrayList<>();
-                List<String> cqsFieldNames = new ArrayList<>();
-                
-                for (QuestionnaireStepDto step : template.getSteps()) {
-                    for (QuestionnaireFieldDto field : step.getFields()) {
-                        templateFieldNames.add(field.getName());
-                        if (field.isCqsAutoPopulated()) {
-                            cqsFieldNames.add(field.getName());
-                        } else {
-                            plantFieldNames.add(field.getName());
-                        }
-                    }
-                }
-                
-                Map<String, Object> templateInfo = new HashMap<>();
-                templateInfo.put("totalFields", templateFieldNames.size());
-                templateInfo.put("plantFields", plantFieldNames.size());
-                templateInfo.put("cqsFields", cqsFieldNames.size());
-                templateInfo.put("plantFieldNames", plantFieldNames);
-                templateInfo.put("cqsFieldNames", cqsFieldNames);
-                response.put("template", templateInfo);
-            }
-            
-            response.put("timestamp", LocalDateTime.now());
-            
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to test validation");
-            errorResponse.put("message", e.getMessage());
-            errorResponse.put("plantCode", plantCode);
-            errorResponse.put("materialCode", materialCode);
-            
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
-    }
-    
-
-    
-    /**
-     * Debug endpoint to check plant-specific data status
-     */
-    @GetMapping("/debug/{plantCode}/{materialCode}")
-    public ResponseEntity<Map<String, Object>> debugPlantData(
-            @PathVariable String plantCode, 
-            @PathVariable String materialCode) {
-        try {
-            Map<String, Object> debugInfo = new HashMap<>();
-            
-            // Get plant-specific data
-            PlantSpecificDataDto plantData = plantQuestionnaireService.getPlantSpecificData(plantCode, materialCode);
-            
-            debugInfo.put("plantCode", plantCode);
-            debugInfo.put("materialCode", materialCode);
-            debugInfo.put("dataExists", plantData != null);
-            
-            if (plantData != null) {
-                debugInfo.put("cqsInputsEmpty", plantData.getCqsInputs() == null || plantData.getCqsInputs().isEmpty());
-                debugInfo.put("plantInputsEmpty", plantData.getPlantInputs() == null || plantData.getPlantInputs().isEmpty());
-                debugInfo.put("cqsSyncStatus", plantData.getCqsSyncStatus());
-                debugInfo.put("completionStatus", plantData.getCompletionStatus());
-                debugInfo.put("completionPercentage", plantData.getCompletionPercentage());
-                debugInfo.put("totalFields", plantData.getTotalFields());
-                debugInfo.put("completedFields", plantData.getCompletedFields());
-                debugInfo.put("lastUpdated", plantData.getUpdatedAt());
-                debugInfo.put("updatedBy", plantData.getUpdatedBy());
-                
-                if (plantData.getCqsInputs() != null) {
-                    debugInfo.put("cqsInputsSize", plantData.getCqsInputs().size());
-                }
-                
-                if (plantData.getPlantInputs() != null) {
-                    debugInfo.put("plantInputsSize", plantData.getPlantInputs().size());
-                    debugInfo.put("plantInputsSample", plantData.getPlantInputs().entrySet().stream()
-                        .limit(5)
-                        .collect(Collectors.toMap(
-                            Map.Entry::getKey,
-                            Map.Entry::getValue
-                        )));
-                }
-            }
-            
-            // Check if CQS data exists
-            try {
-                CqsDataDto cqsData = plantQuestionnaireService.getCqsData(materialCode, plantCode);
-                debugInfo.put("cqsDataExists", cqsData != null && cqsData.getCqsData() != null);
-                if (cqsData != null) {
-                    debugInfo.put("cqsDataSize", cqsData.getCqsData() != null ? cqsData.getCqsData().size() : 0);
-                    debugInfo.put("cqsSyncStatus", cqsData.getSyncStatus());
-                }
-            } catch (Exception e) {
-                debugInfo.put("cqsDataError", e.getMessage());
-            }
-            
-            // Test completion validation
-            try {
-                PlantQuestionnaireService.ValidationResult validation = 
-                    plantQuestionnaireService.validateQuestionnaireCompletion(plantCode, materialCode);
-                Map<String, Object> validationMap = new HashMap<>();
-                validationMap.put("isValid", validation.isValid());
-                validationMap.put("message", validation.getMessage());
-                validationMap.put("completionPercentage", validation.getCompletionPercentage());
-                validationMap.put("missingFieldsCount", validation.getMissingFields().size());
-                debugInfo.put("validationResult", validationMap);
-            } catch (Exception e) {
-                debugInfo.put("validationError", e.getMessage());
-            }
-            
-            debugInfo.put("timestamp", LocalDateTime.now());
-            
-            return ResponseEntity.ok(debugInfo);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to get debug info");
-            errorResponse.put("message", e.getMessage());
-            errorResponse.put("plantCode", plantCode);
-            errorResponse.put("materialCode", materialCode);
-            
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }

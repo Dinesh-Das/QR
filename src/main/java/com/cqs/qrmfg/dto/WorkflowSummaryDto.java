@@ -25,6 +25,7 @@ public class WorkflowSummaryDto {
     private LocalDateTime createdAt;
     private LocalDateTime lastModified;
     private boolean overdue;
+    private String completionStatus;
 
     // Constructors
     public WorkflowSummaryDto() {}
@@ -33,7 +34,7 @@ public class WorkflowSummaryDto {
                              String materialDescription, String itemDescription, WorkflowState currentState, String assignedPlant, 
                              String plantCode, String initiatedBy, int daysPending, 
                              long totalQueries, long openQueries, long documentCount, LocalDateTime createdAt, 
-                             LocalDateTime lastModified, boolean overdue) {
+                             LocalDateTime lastModified, boolean overdue, String completionStatus) {
         this.id = id;
         this.projectCode = projectCode;
         this.materialCode = materialCode;
@@ -51,6 +52,7 @@ public class WorkflowSummaryDto {
         this.createdAt = createdAt;
         this.lastModified = lastModified;
         this.overdue = overdue;
+        this.completionStatus = completionStatus;
     }
 
     // Getters and Setters
@@ -208,5 +210,13 @@ public class WorkflowSummaryDto {
 
     public void setOpenQueriesCount(long openQueriesCount) {
         this.openQueries = openQueriesCount;
+    }
+
+    public String getCompletionStatus() {
+        return completionStatus;
+    }
+
+    public void setCompletionStatus(String completionStatus) {
+        this.completionStatus = completionStatus;
     }
 }

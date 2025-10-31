@@ -2,7 +2,7 @@ import {
   SaveOutlined,
   QuestionCircleOutlined,
   CheckCircleOutlined,
-  BugOutlined,
+
   ExclamationCircleOutlined,
   ArrowLeftOutlined,
   ArrowRightOutlined,
@@ -241,10 +241,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
         setFormData(prev => ({ ...prev, ...extractedCqsFormData }));
         form.setFieldsValue(extractedCqsFormData);
 
-        // Debug: Log current form values after setting CQS data
-        setTimeout(() => {
-          console.log('Form values after CQS set:', form.getFieldsValue());
-        }, 100);
+
       }
 
       // Load plant-specific data
@@ -944,9 +941,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
       const percentage = totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
 
-      // CRITICAL DEBUG: Log detailed completion calculation
-      console.log(`PlantQuestionnaire: Overall completion calculation:`);
-      console.log(`  - Total fields: ${totalFields}`);
+
       console.log(`  - Completed fields: ${completedFields}`);
       console.log(`  - Completion percentage: ${percentage}%`);
       console.log(`  - CQS form data size: ${Object.keys(cqsFormData).length}`);
@@ -1013,24 +1008,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
     }
   }, [workflowData, workflowId, form]);
 
-  // Debug function to check plant data status
-  const debugPlantData = useCallback(async () => {
-    try {
-      if (workflowData?.assignedPlant && workflowData?.materialCode) {
-        const debugInfo = await workflowAPI.debugPlantData(
-          workflowData.assignedPlant, 
-          workflowData.materialCode
-        );
-        console.log('Plant Data Debug Info:', debugInfo);
-        message.info('Debug info logged to console');
-      } else {
-        message.warning('Plant code or material code not available');
-      }
-    } catch (error) {
-      console.error('Failed to get debug info:', error);
-      message.error('Failed to get debug info');
-    }
-  }, [workflowData]);
+
 
   const handleSaveDraft = useCallback(
     async (silent = false) => {
@@ -1092,26 +1070,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
               workflowId
             });
             
-            // CRITICAL DEBUG: Log actual field names and values being sent
-            console.log('PlantQuestionnaire: Field names being sent:', Object.keys(draftData.responses || {}));
-            console.log('PlantQuestionnaire: Sample field values:', 
-              Object.entries(draftData.responses || {}).slice(0, 5).reduce((obj, [key, value]) => {
-                obj[key] = value;
-                return obj;
-              }, {}));
-            
-            // ENHANCED DEBUG: Compare with template field names
-            const templateFieldNames = questionnaireSteps.flatMap(step => 
-              (step.fields || []).map(field => field.name)
-            );
-            const plantFieldNames = questionnaireSteps.flatMap(step => 
-              (step.fields || []).filter(field => !field.isCqsAutoPopulated && !field.cqsAutoPopulated).map(field => field.name)
-            );
-            console.log('PlantQuestionnaire: Template field names (first 10):', templateFieldNames.slice(0, 10));
-            console.log('PlantQuestionnaire: Plant field names (first 10):', plantFieldNames.slice(0, 10));
-            console.log('PlantQuestionnaire: Field name matching analysis:');
-            console.log('  - Sent field names that match template:', Object.keys(draftData.responses || {}).filter(key => templateFieldNames.includes(key)));
-            console.log('  - Sent field names that DON\'T match template:', Object.keys(draftData.responses || {}).filter(key => !templateFieldNames.includes(key)));
+
 
             const response = await workflowAPI.saveDraftPlantResponses(workflowId, draftData);
 
@@ -1163,7 +1122,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
         setSaving(false);
       }
     },
-    [form, formData, workflowId, onSaveDraft, currentStep, completedSteps, isOffline, workflowData, getOverallCompletionPercentage, questionnaireSteps]
+    [form, formData, workflowId, onSaveDraft, currentStep, completedSteps, isOffline, workflowData, getOverallCompletionPercentage]
   );
 
   const handleNext = useCallback(async () => {
@@ -1323,11 +1282,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
         handleSaveDraft();
       }
 
-      // Ctrl/Cmd + Shift + D for debug info
-      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'D') {
-        event.preventDefault();
-        debugPlantData();
-      }
+
 
       // Ctrl/Cmd + Right Arrow to go to next step
       if ((event.ctrlKey || event.metaKey) && event.key === 'ArrowRight') {
@@ -1378,7 +1333,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [currentStep, questionnaireSteps.length, handleNext, handlePrevious, handleSaveDraft, debugPlantData]);
+  }, [currentStep, questionnaireSteps.length, handleNext, handlePrevious, handleSaveDraft]);
 
   // Define functions before useEffect hooks that depend on them
   const loadWorkflowData = useCallback(async () => {
@@ -1783,16 +1738,19 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
     const stepFields = questionnaireSteps[stepIndex].fields;
 
-    // Filter out CQS auto-populated fields for step completion calculation
+    // Include ALL fields (both CQS and user-editable) for completion calculation
+    const allFields = stepFields;
     const userEditableFields = stepFields.filter(field => !field.isCqsAutoPopulated && !field.disabled);
-    const requiredFields = userEditableFields.filter(field => field.required);
-    const optionalFields = userEditableFields.filter(field => !field.required);
+    const cqsFields = stepFields.filter(field => field.isCqsAutoPopulated);
+    const requiredFields = allFields.filter(field => field.required);
+    const optionalFields = allFields.filter(field => !field.required);
 
     // Get current form values including any unsaved changes
     const currentFormValues = form.getFieldsValue();
     const currentData = { ...formData, ...currentFormValues };
 
-    const completedRequiredFields = requiredFields.filter(field => {
+    // Check completion for user-editable fields
+    const completedUserFields = userEditableFields.filter(field => {
       const value = currentData[field.name];
       if (Array.isArray(value)) {
         return value.length > 0;
@@ -1800,11 +1758,29 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
       return value && value !== '' && value !== null && value !== undefined;
     });
 
-    const completedOptionalFields = optionalFields.filter(field => {
+    // Check completion for CQS fields (consider them completed if they have any value)
+    const completedCqsFields = cqsFields.filter(field => {
       const value = currentData[field.name];
       if (Array.isArray(value)) {
         return value.length > 0;
       }
+      return value && value !== '' && value !== null && value !== undefined && value !== 'Data not available';
+    });
+
+    const totalCompleted = completedUserFields.length + completedCqsFields.length;
+    const totalFields = allFields.length;
+
+    // Calculate required field completion (including CQS required fields)
+    const completedRequiredFields = requiredFields.filter(field => {
+      const value = currentData[field.name];
+      if (Array.isArray(value)) {
+        return value.length > 0;
+      }
+      // For CQS fields, consider them completed if they have data (even if it's auto-populated)
+      if (field.isCqsAutoPopulated) {
+        return value && value !== '' && value !== null && value !== undefined && value !== 'Data not available';
+      }
+      // For user fields, normal completion check
       return value && value !== '' && value !== null && value !== undefined;
     });
 
@@ -1812,30 +1788,34 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
     const openQueries = stepQueries.filter(q => q.status === 'OPEN');
     const resolvedQueries = stepQueries.filter(q => q.status === 'RESOLVED');
 
+    // Determine if step is complete
+    let isComplete = false;
+    if (requiredFields.length > 0) {
+      // If there are required fields, all must be completed
+      isComplete = completedRequiredFields.length === requiredFields.length;
+    } else if (totalFields > 0) {
+      // If no required fields but has fields, ALL fields must be completed (100%)
+      isComplete = totalCompleted === totalFields;
+    } else {
+      // No fields at all, consider complete
+      isComplete = true;
+    }
+
     return {
-      total: userEditableFields.length,
+      total: totalFields,
       required: requiredFields.length,
       optional: optionalFields.length,
-      completed: completedRequiredFields.length + completedOptionalFields.length,
+      completed: totalCompleted,
       requiredCompleted: completedRequiredFields.length,
-      optionalCompleted: completedOptionalFields.length,
-      isComplete:
-        requiredFields.length > 0
-          ? completedRequiredFields.length === requiredFields.length
-          : userEditableFields.length > 0 &&
-          (completedRequiredFields.length + completedOptionalFields.length) / userEditableFields.length >=
-          0.5,
+      optionalCompleted: totalCompleted - completedRequiredFields.length,
+      isComplete,
       hasOpenQueries: openQueries.length > 0,
       hasResolvedQueries: resolvedQueries.length > 0,
       openQueriesCount: openQueries.length,
       resolvedQueriesCount: resolvedQueries.length,
       completionPercentage:
-        userEditableFields.length > 0
-          ? Math.round(
-            ((completedRequiredFields.length + completedOptionalFields.length) /
-              userEditableFields.length) *
-            100
-          )
+        totalFields > 0
+          ? Math.round((totalCompleted / totalFields) * 100)
           : 100,
       requiredCompletionPercentage:
         requiredFields.length > 0
@@ -2550,16 +2530,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
               >
                 {isReadOnly ? 'Read Only' : 'Save Draft'}
               </Button>
-              {process.env.NODE_ENV === 'development' && (
-                <Button
-                  className="modern-btn modern-btn-secondary"
-                  icon={<BugOutlined />}
-                  onClick={debugPlantData}
-                  title="Debug Plant Data (Ctrl+Shift+D)"
-                >
-                  Debug
-                </Button>
-              )}
+
               {isMobile && (
                 <Button
                   className="modern-btn modern-btn-secondary"
@@ -2643,8 +2614,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
                           {step.title}
                         </div>
                         <div style={{ fontSize: '12px', color: '#64748b', marginTop: 2 }}>
-                          {stepStatus.completed}/{stepStatus.total} fields (
-                          {stepStatus.requiredCompleted}/{stepStatus.required} required)
+                          {stepStatus.completed}/{stepStatus.total} fields
                           {hasOpenQueries && (
                             <Tag color="red" size="small" style={{ marginLeft: 4 }}>
                               {
@@ -2699,7 +2669,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
                   Step Progress:{' '}
                   {(() => {
                     const status = getStepCompletionStatus(currentStep);
-                    return `${status.requiredCompleted}/${status.required} required fields`;
+                    return `${status.completed}/${status.total} fields`;
                   })()}
                 </Text>
               </div>
@@ -2880,66 +2850,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
                       {isReadOnly ? 'Submitted' : submitting ? 'Submitting...' : 'Submit Questionnaire'}
                     </Button>
                     
-                    {/* DEBUG BUTTON - Remove in production */}
-                    <Button
-                      onClick={async () => {
-                        console.log('=== FIELD DEBUG ANALYSIS ===');
-                        const currentValues = form.getFieldsValue();
-                        const allData = { ...formData, ...currentValues, ...cqsFormData };
-                        
-                        console.log('1. Current form values:', Object.keys(currentValues).length, 'fields');
-                        console.log('2. Form data state:', Object.keys(formData).length, 'fields');
-                        console.log('3. CQS form data:', Object.keys(cqsFormData).length, 'fields');
-                        console.log('4. Combined data:', Object.keys(allData).length, 'fields');
-                        
-                        // Show template vs actual data
-                        const templateFields = questionnaireSteps.flatMap(step => step.fields || []);
-                        const plantFields = templateFields.filter(f => !f.isCqsAutoPopulated && !f.cqsAutoPopulated);
-                        const cqsFields = templateFields.filter(f => f.isCqsAutoPopulated || f.cqsAutoPopulated);
-                        
-                        console.log('5. Template analysis:');
-                        console.log('   - Total template fields:', templateFields.length);
-                        console.log('   - Plant fields in template:', plantFields.length);
-                        console.log('   - CQS fields in template:', cqsFields.length);
-                        
-                        console.log('6. Field completion analysis:');
-                        let filledPlantFields = 0;
-                        let filledCqsFields = 0;
-                        
-                        plantFields.forEach(field => {
-                          const value = allData[field.name];
-                          const isFilled = value && value !== '' && value !== null && value !== undefined;
-                          if (isFilled) filledPlantFields++;
-                          if (!isFilled) console.log(`   - Empty plant field: ${field.name}`);
-                        });
-                        
-                        cqsFields.forEach(field => {
-                          const value = allData[field.name];
-                          const isFilled = value && value !== '' && value !== null && value !== undefined && value !== 'Data not available';
-                          if (isFilled) filledCqsFields++;
-                        });
-                        
-                        console.log(`   - Filled plant fields: ${filledPlantFields}/${plantFields.length}`);
-                        console.log(`   - Filled CQS fields: ${filledCqsFields}/${cqsFields.length}`);
-                        console.log(`   - Total completion: ${filledPlantFields + filledCqsFields}/${templateFields.length} (${Math.round((filledPlantFields + filledCqsFields) / templateFields.length * 100)}%)`);
-                        
-                        // Test backend debug endpoint
-                        try {
-                          const debugResponse = await fetch(`/api/v1/plant-questionnaire/debug-fields/${workflowData?.assignedPlant}/${workflowData?.materialCode}`);
-                          const debugData = await debugResponse.json();
-                          console.log('7. Backend debug response:', debugData);
-                        } catch (error) {
-                          console.error('Failed to get backend debug info:', error);
-                        }
-                        
-                        message.info('Debug analysis complete - check browser console for details');
-                      }}
-                      style={{ marginLeft: 8 }}
-                      icon={<BugOutlined />}
-                      size="large"
-                    >
-                      Debug
-                    </Button>
+
                   </>
                 ) : (
                   <Button
@@ -3001,8 +2912,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
                       {step.title}
                     </Text>
                     <div style={{ fontSize: '12px', color: '#64748b', marginTop: 4 }}>
-                      {stepStatus.completed}/{stepStatus.total} fields completed (
-                      {stepStatus.requiredCompleted}/{stepStatus.required} required)
+                      {stepStatus.completed}/{stepStatus.total} fields completed
                       {hasOpenQueries && (
                         <Tag color="red" size="small" style={{ marginLeft: 4 }}>
                           {

@@ -1,6 +1,5 @@
 import {
   FormOutlined,
-  EyeOutlined,
   SearchOutlined
 } from '@ant-design/icons';
 import { Table, Button, Space, Tag, Progress, Input } from 'antd';
@@ -17,7 +16,6 @@ const WorkflowTable = React.memo(({
   workflows, 
   loading, 
   onStartQuestionnaire, 
-  onViewWorkflow,
   onRefresh 
 }) => {
   /**
@@ -63,16 +61,7 @@ const WorkflowTable = React.memo(({
     }
   }, [onStartQuestionnaire]);
 
-  /**
-   * Handle view workflow action
-   */
-  const handleViewWorkflow = useCallback((workflow) => {
-    if (onViewWorkflow) {
-      onViewWorkflow(workflow);
-    } else {
-      console.log('View workflow:', workflow.id);
-    }
-  }, [onViewWorkflow]);
+
 
   /**
    * Table columns configuration with memoization
@@ -184,7 +173,8 @@ const WorkflowTable = React.memo(({
       width: 150,
       sorter: (a, b) => a.completionPercentage - b.completionPercentage,
       render: (_, record) => {
-        const percentage = record.completionPercentage || 0;
+        const completedFields = record.completedFields || 0;
+        const percentage = Math.round((completedFields / 87) * 100);
         return (
           <div>
             <Progress
@@ -194,7 +184,7 @@ const WorkflowTable = React.memo(({
               format={() => `${percentage}%`}
             />
             <div style={{ fontSize: '11px', color: '#666', marginTop: 2 }}>
-              {record.completedFields || 0} / {record.totalFields || 0} fields
+              {completedFields} / 87 fields
             </div>
           </div>
         );
@@ -233,17 +223,11 @@ const WorkflowTable = React.memo(({
           >
             {record.completionPercentage > 0 ? 'Continue' : 'Start'}
           </Button>
-          <Button
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => handleViewWorkflow(record)}
-          >
-            View
-          </Button>
+
         </Space>
       )
     }
-  ], [getStatusColor, getCompletionColor, getDaysInState, handleStartQuestionnaire, handleViewWorkflow]);
+  ], [getStatusColor, getCompletionColor, getDaysInState, handleStartQuestionnaire]);
 
   /**
    * Row class name for styling overdue rows
@@ -326,14 +310,12 @@ WorkflowTable.propTypes = {
   })).isRequired,
   loading: PropTypes.bool,
   onStartQuestionnaire: PropTypes.func,
-  onViewWorkflow: PropTypes.func,
   onRefresh: PropTypes.func
 };
 
 WorkflowTable.defaultProps = {
   loading: false,
   onStartQuestionnaire: null,
-  onViewWorkflow: null,
   onRefresh: null
 };
 

@@ -255,8 +255,13 @@ public class PlantQuestionnaireService {
                 stepDto.setTitle(getStepTitle(stepNumber, stepTemplates));
                 stepDto.setDescription(getStepDescription(stepNumber, stepTemplates));
                 
-                // Sort templates within step by order index
+                // Sort templates within step by order index and filter out display-only questions
                 List<QuestionTemplate> sortedTemplates = stepTemplates.stream()
+                    .filter(template -> {
+                        // Exclude display-only questions and questions with no responsible party
+                        return !"DISPLAY".equalsIgnoreCase(template.getQuestionType()) && 
+                               !"NONE".equalsIgnoreCase(template.getResponsible());
+                    })
                     .sorted((t1, t2) -> {
                         Integer order1 = t1.getOrderIndex() != null ? t1.getOrderIndex() : t1.getSrNo();
                         Integer order2 = t2.getOrderIndex() != null ? t2.getOrderIndex() : t2.getSrNo();
@@ -476,8 +481,9 @@ public class PlantQuestionnaireService {
                 plantData.setCompletionPercentage(currentCompletionPercentage);
             }
             
-            // CRITICAL FIX: Force completion status to COMPLETED for submitted questionnaires
+            // CRITICAL FIX: Force completion status to COMPLETED and 100% for submitted questionnaires
             plantData.setCompletionStatus("COMPLETED");
+            plantData.setCompletionPercentage(100); // Force 100% completion for submitted questionnaires
             
             // Save with preserved stats
             PlantSpecificData savedData = plantSpecificDataRepository.save(plantData);
@@ -634,28 +640,80 @@ public class PlantQuestionnaireService {
     @Transactional
     private void updateWorkflowStatusOnSubmission(String plantCode, String materialCode, String submittedBy) {
         try {
-            // Find the workflow for this plant and material
-            List<Workflow> workflows = workflowRepository.findByPlantCodeWithQueries(plantCode);
+            System.out.println("PlantQuestionnaireService: Attempting to update workflow status for plant=" + 
+                             plantCode + ", material=" + materialCode);
             
-            Workflow targetWorkflow = workflows.stream()
-                .filter(w -> materialCode.equals(w.getMaterialCode()))
-                .findFirst()
-                .orElse(null);
+            // Try multiple approaches to find the workflow
+            Workflow targetWorkflow = null;
+            
+            // Approach 1: Direct lookup by plant and material
+            List<Workflow> directMatches = workflowRepository.findByPlantCodeAndMaterialCode(plantCode, materialCode);
+            if (!directMatches.isEmpty()) {
+                targetWorkflow = directMatches.get(0);
+                System.out.println("PlantQuestionnaireService: Found workflow via direct lookup: " + targetWorkflow.getId());
+            }
+            
+            // Approach 2: If not found, try by plant code with queries
+            if (targetWorkflow == null) {
+                List<Workflow> workflows = workflowRepository.findByPlantCodeWithQueries(plantCode);
+                System.out.println("PlantQuestionnaireService: Found " + workflows.size() + " workflows for plant " + plantCode);
+                
+                targetWorkflow = workflows.stream()
+                    .filter(w -> materialCode.equals(w.getMaterialCode()))
+                    .findFirst()
+                    .orElse(null);
+                
+                if (targetWorkflow != null) {
+                    System.out.println("PlantQuestionnaireService: Found workflow via plant query: " + targetWorkflow.getId());
+                }
+            }
+            
+            // Approach 3: If still not found, try by material code
+            if (targetWorkflow == null) {
+                List<Workflow> materialWorkflows = workflowRepository.findByMaterialCode(materialCode);
+                targetWorkflow = materialWorkflows.stream()
+                    .filter(w -> plantCode.equals(w.getPlantCode()))
+                    .findFirst()
+                    .orElse(null);
+                
+                if (targetWorkflow != null) {
+                    System.out.println("PlantQuestionnaireService: Found workflow via material query: " + targetWorkflow.getId());
+                }
+            }
             
             if (targetWorkflow != null) {
-                // Update workflow state to COMPLETED
-                targetWorkflow.transitionTo(WorkflowState.COMPLETED, submittedBy);
-                workflowRepository.save(targetWorkflow);
+                System.out.println("PlantQuestionnaireService: Current workflow state: " + targetWorkflow.getState() + 
+                                 ", attempting transition to COMPLETED");
                 
-                System.out.println("PlantQuestionnaireService: Updated workflow " + targetWorkflow.getId() + 
-                                 " status to COMPLETED for material " + materialCode + " at plant " + plantCode);
+                // Check if transition is allowed
+                if (targetWorkflow.canTransitionTo(WorkflowState.COMPLETED)) {
+                    // Update workflow state to COMPLETED
+                    targetWorkflow.transitionTo(WorkflowState.COMPLETED, submittedBy);
+                    Workflow savedWorkflow = workflowRepository.save(targetWorkflow);
+                    
+                    System.out.println("PlantQuestionnaireService: Successfully updated workflow " + savedWorkflow.getId() + 
+                                     " status to " + savedWorkflow.getState() + " for material " + materialCode + 
+                                     " at plant " + plantCode);
+                } else {
+                    System.err.println("PlantQuestionnaireService: Cannot transition from " + targetWorkflow.getState() + 
+                                     " to COMPLETED for workflow " + targetWorkflow.getId());
+                }
             } else {
                 System.err.println("PlantQuestionnaireService: No workflow found for material " + materialCode + 
-                           " at plant " + plantCode);
+                           " at plant " + plantCode + " using any lookup method");
+                
+                // Debug: List all workflows for this plant
+                List<Workflow> allPlantWorkflows = workflowRepository.findByPlantCodeWithQueries(plantCode);
+                System.err.println("PlantQuestionnaireService: Available workflows for plant " + plantCode + ":");
+                for (Workflow w : allPlantWorkflows) {
+                    System.err.println("  - Workflow " + w.getId() + ": material=" + w.getMaterialCode() + 
+                                     ", state=" + w.getState());
+                }
             }
             
         } catch (Exception e) {
             System.err.println("PlantQuestionnaireService: Failed to update workflow status: " + e.getMessage());
+            e.printStackTrace();
             // Don't throw exception to avoid breaking the submission process
         }
     }
@@ -769,6 +827,39 @@ public class PlantQuestionnaireService {
     }
     
     /**
+     * Manually update workflow status for completed questionnaires (for fixing data inconsistencies)
+     */
+    @Transactional
+    public Map<String, Object> fixWorkflowStatusForCompletedQuestionnaire(String plantCode, String materialCode, String updatedBy) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // Check if questionnaire is actually completed
+            Map<String, Object> questionnaireStatus = getQuestionnaireStatus(plantCode, materialCode);
+            Boolean isSubmitted = (Boolean) questionnaireStatus.get("isSubmitted");
+            String completionStatus = (String) questionnaireStatus.get("completionStatus");
+            
+            if (!Boolean.TRUE.equals(isSubmitted) && !"COMPLETED".equals(completionStatus)) {
+                result.put("success", false);
+                result.put("message", "Questionnaire is not completed. Cannot update workflow status.");
+                return result;
+            }
+            
+            // Force update the workflow status
+            updateWorkflowStatusOnSubmission(plantCode, materialCode, updatedBy);
+            
+            result.put("success", true);
+            result.put("message", "Workflow status update attempted. Check logs for details.");
+            return result;
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "Failed to fix workflow status: " + e.getMessage());
+            return result;
+        }
+    }
+
+    /**
      * Validation result class
      */
     public static class ValidationResult {
@@ -832,11 +923,7 @@ public class PlantQuestionnaireService {
         stepDescriptions.put(11, "Statutory compliance and regulatory requirements");
         stepDescriptions.put(12, "Additional inputs and gap analysis");
         
-        // If we have templates, try to get description from the first template's comments
-        if (!stepTemplates.isEmpty() && stepTemplates.get(0).getComments() != null) {
-            return stepTemplates.get(0).getComments();
-        }
-        
+        // Use predefined descriptions instead of template comments to avoid confusion
         return stepDescriptions.getOrDefault(stepNumber, "Step " + stepNumber + " information");
     }
     
@@ -1269,11 +1356,9 @@ public class PlantQuestionnaireService {
                     
                     // CRITICAL FIX: Force recalculation of completion stats if data exists but stats are missing/incorrect
                     if (plantData != null && plantData.getPlantInputs() != null && !plantData.getPlantInputs().isEmpty()) {
-                        // Check if completion stats are missing or incorrect
-                        boolean needsRecalculation = plantData.getCompletionPercentage() == null || 
-                                                   plantData.getCompletionPercentage() == 0 ||
-                                                   plantData.getTotalFields() == null ||
-                                                   plantData.getTotalFields() == 0;
+                        // FORCE recalculation every time to ensure dashboard shows correct progress
+                        // This ensures the dashboard always reflects the latest completion calculation logic
+                        boolean needsRecalculation = true;
                         
                         if (needsRecalculation) {
                             System.out.println("PlantQuestionnaireService: Dashboard data - forcing recalculation for " + 
@@ -1283,11 +1368,8 @@ public class PlantQuestionnaireService {
                             
                             try {
                                 recalculateCompletionStats(workflow.getMaterialCode(), plantCode);
-                                // Re-fetch the updated data
+                                // Re-fetch the updated data immediately after recalculation
                                 plantData = getPlantSpecificData(plantCode, workflow.getMaterialCode());
-                                System.out.println("PlantQuestionnaireService: After recalculation: " + 
-                                                 plantData.getCompletedFields() + "/" + plantData.getTotalFields() + 
-                                                 " (" + plantData.getCompletionPercentage() + "%)");
                             } catch (Exception e) {
                                 System.err.println("PlantQuestionnaireService: Failed to recalculate stats for dashboard: " + e.getMessage());
                             }
@@ -1316,18 +1398,24 @@ public class PlantQuestionnaireService {
                         
                         // CRITICAL FIX: Determine completion status based on submission status first
                         String completionStatus;
+                        Integer displayCompletionPercentage = plantData.getCompletionPercentage();
+                        
                         if (plantData.getSubmittedAt() != null) {
-                            // If questionnaire is submitted, it's always COMPLETED regardless of workflow state
+                            // If questionnaire is submitted, it's always COMPLETED with 100% regardless of calculated percentage
                             completionStatus = "COMPLETED";
+                            displayCompletionPercentage = 100; // Force 100% for submitted questionnaires
                         } else if (workflow.getState() == WorkflowState.COMPLETED) {
                             // If workflow is completed but no submission timestamp, still mark as completed
                             completionStatus = "COMPLETED";
+                            displayCompletionPercentage = 100; // Force 100% for completed workflows
                         } else if (plantData.getCompletionPercentage() != null && plantData.getCompletionPercentage() > 0) {
                             completionStatus = "IN_PROGRESS";
                         } else {
                             completionStatus = "DRAFT";
                         }
+                        
                         workflowData.put("completionStatus", completionStatus);
+                        workflowData.put("completionPercentage", displayCompletionPercentage); // Override with corrected percentage
                     } else {
                         // No plant data exists yet - initialize with defaults
                         workflowData.put("completionPercentage", 0);
@@ -1519,24 +1607,37 @@ public class PlantQuestionnaireService {
                     // Check if field is completed (has a value)
                     boolean isCompleted = false;
                     
-                    if (field.isCqsAutoPopulated() || KNOWN_CQS_FIELDS.contains(field.getName())) {
+                    if (field.isCqsAutoPopulated()) {
                         cqsFieldsCount++;
                         
-                        // DEFINITIVE FIX: All CQS fields are ALWAYS completed
-                        isCompleted = true;
-                        completedCqsFieldsCount++;
+                        // Check if CQS field has actual data
+                        String cqsValue = getCqsValueForField(field.getName(), cqsData);
+                        boolean hasCqsData = cqsValue != null && !cqsValue.trim().isEmpty() && 
+                                           !"Data not available".equals(cqsValue) &&
+                                           !"Not available".equalsIgnoreCase(cqsValue) &&
+                                           !"N/A".equalsIgnoreCase(cqsValue);
                         
                         // Check if field has data in plant inputs (frontend sent it)
                         Object plantValue = plantInputs.get(field.getName());
                         boolean hasPlantData = plantValue != null && !plantValue.toString().trim().isEmpty() && 
                                              !"null".equalsIgnoreCase(plantValue.toString());
                         
+                        // CQS field is completed if it has either CQS data or plant data
+                        isCompleted = hasCqsData || hasPlantData;
+                        
+                        if (isCompleted) {
+                            completedCqsFieldsCount++;
+                        }
+                        
                         if (hasPlantData) {
                             System.out.println("PlantQuestionnaireService: ✓ CQS field '" + field.getName() + 
                                              "' has plant data: '" + plantValue + "' - COMPLETED");
-                        } else {
+                        } else if (hasCqsData) {
                             System.out.println("PlantQuestionnaireService: ✓ CQS field '" + field.getName() + 
-                                             "' auto-completed (CQS auto-populated)");
+                                             "' has CQS data: '" + cqsValue + "' - COMPLETED");
+                        } else {
+                            System.out.println("PlantQuestionnaireService: ✗ CQS field '" + field.getName() + 
+                                             "' has no data - NOT COMPLETED");
                         }
                     } else {
                         plantFieldsCount++;
@@ -1611,13 +1712,7 @@ public class PlantQuestionnaireService {
                 }
                 
                 if (hasValue) {
-                    if (KNOWN_CQS_FIELDS.contains(fieldName)) {
-                        frontendCqsFieldsCompleted++;
-                        System.out.println("PlantQuestionnaireService: ✓ CQS field '" + fieldName + "' completed (value: " + value + ")");
-                    } else {
-                        frontendPlantFieldsCompleted++;
-                        System.out.println("PlantQuestionnaireService: ✓ Plant field '" + fieldName + "' completed (value: " + value + ")");
-                    }
+                    frontendPlantFieldsCompleted++;
                 }
             }
             
@@ -1634,7 +1729,7 @@ public class PlantQuestionnaireService {
             int completionPercentage = totalFields > 0 ? Math.round((float)completedFields * 100 / totalFields) : 0;
             
             System.out.println("PlantQuestionnaireService: ===== FINAL CALCULATION SUMMARY =====");
-            System.out.println("PlantQuestionnaireService: Using FRONTEND-BASED calculation as source of truth");
+            System.out.println("PlantQuestionnaireService: Using TEMPLATE-BASED calculation as source of truth");
             System.out.println("PlantQuestionnaireService: Total fields: " + totalFields);
             System.out.println("PlantQuestionnaireService: Completed fields: " + completedFields);
             System.out.println("PlantQuestionnaireService: Completion percentage: " + completionPercentage + "%");
@@ -1704,5 +1799,6 @@ public class PlantQuestionnaireService {
         return null;
     }
     
+
 
 }
