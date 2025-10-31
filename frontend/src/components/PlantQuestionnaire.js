@@ -2,6 +2,7 @@ import {
   SaveOutlined,
   QuestionCircleOutlined,
   CheckCircleOutlined,
+  BugOutlined,
   ExclamationCircleOutlined,
   ArrowLeftOutlined,
   ArrowRightOutlined,
@@ -107,6 +108,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [pendingChanges, setPendingChanges] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [isReadOnly, setIsReadOnly] = useState(false);
   // const [compactMode, setCompactMode] = useState(false); // Not currently used
   const [_progressUpdateTrigger, _setProgressUpdateTrigger] = useState(0);
   const { isMobile } = useResponsive();
@@ -625,6 +627,40 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
       ]
     },
     {
+      title: 'Process Safety Management',
+      description: 'Process safety management thresholds (CQS auto-populated)',
+      fields: [
+        {
+          name: 'psm_tier1_outdoor',
+          label: 'PSM Tier I Outdoor - Threshold quantity (kgs)',
+          type: 'input',
+          required: false,
+          isCqsAutoPopulated: true
+        },
+        {
+          name: 'psm_tier1_indoor',
+          label: 'PSM Tier I Indoor - Threshold quantity (kgs)',
+          type: 'input',
+          required: false,
+          isCqsAutoPopulated: true
+        },
+        {
+          name: 'psm_tier2_outdoor',
+          label: 'PSM Tier II Outdoor - Threshold quantity (kgs)',
+          type: 'input',
+          required: false,
+          isCqsAutoPopulated: true
+        },
+        {
+          name: 'psm_tier2_indoor',
+          label: 'PSM Tier II Indoor - Threshold quantity (kgs)',
+          type: 'input',
+          required: false,
+          isCqsAutoPopulated: true
+        }
+      ]
+    },
+    {
       title: 'Storage and Handling',
       description: 'Storage and handling procedures',
       fields: [
@@ -871,7 +907,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
     // Get current form values including any unsaved changes
     try {
       const currentFormValues = form.getFieldsValue();
-      const currentData = { ...formData, ...currentFormValues };
+      const currentData = { ...formData, ...currentFormValues, ...cqsFormData };
 
       questionnaireSteps.forEach((step, _index) => {
         const stepFields = step.fields || [];
@@ -881,6 +917,22 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
         const completedStepFields = stepFields.filter(field => {
           const value = currentData[field.name];
+          
+          // For CQS fields, check if they have auto-populated values
+          if (field.isCqsAutoPopulated || field.cqsAutoPopulated) {
+            // CQS field is completed if it has a value from CQS data or manual input
+            const cqsValue = cqsFormData[field.name];
+            const manualValue = currentData[field.name];
+            const finalValue = manualValue || cqsValue;
+            
+            if (Array.isArray(finalValue)) {
+              return finalValue.length > 0;
+            }
+            return finalValue && finalValue !== '' && finalValue !== null && 
+                   finalValue !== undefined && finalValue !== 'Data not available';
+          }
+          
+          // For plant fields, check if user has provided a value
           if (Array.isArray(value)) {
             return value.length > 0;
           }
@@ -892,14 +944,93 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
       const percentage = totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
 
-      // Overall completion calculated (including both CQS and plant fields)
+      // CRITICAL DEBUG: Log detailed completion calculation
+      console.log(`PlantQuestionnaire: Overall completion calculation:`);
+      console.log(`  - Total fields: ${totalFields}`);
+      console.log(`  - Completed fields: ${completedFields}`);
+      console.log(`  - Completion percentage: ${percentage}%`);
+      console.log(`  - CQS form data size: ${Object.keys(cqsFormData).length}`);
+      console.log(`  - Current form data size: ${Object.keys(currentData).length}`);
 
       return percentage;
     } catch (error) {
       console.error('Error calculating overall completion:', error);
       return 0;
     }
-  }, [questionnaireSteps, formData, form]);
+  }, [questionnaireSteps, formData, form, cqsFormData]);
+
+  // Load plant-specific data from backend
+  const loadPlantSpecificData = useCallback(async () => {
+    try {
+      if (!workflowData?.assignedPlant || !workflowData?.materialCode) {
+        console.warn('Missing plant or material code for loading plant data');
+        return;
+      }
+
+      console.log('Loading plant-specific data for:', {
+        plantCode: workflowData.assignedPlant,
+        materialCode: workflowData.materialCode,
+        workflowId
+      });
+
+      const plantData = await workflowAPI.getPlantSpecificData({
+        plantCode: workflowData.assignedPlant,
+        materialCode: workflowData.materialCode
+      });
+
+      if (plantData && plantData.plantInputs && Object.keys(plantData.plantInputs).length > 0) {
+        console.log('Found existing plant data:', plantData.plantInputs);
+        
+        // CRITICAL: Only load data if it matches current material
+        if (plantData.materialCode === workflowData.materialCode) {
+          setFormData(prev => ({ ...prev, ...plantData.plantInputs }));
+          form.setFieldsValue(plantData.plantInputs);
+          
+          // Check if questionnaire is submitted/read-only
+          if (plantData.submittedAt) {
+            setIsReadOnly(true);
+            message.info('This questionnaire has been submitted and is read-only');
+          }
+        } else {
+          console.warn('Plant data material mismatch - not loading data');
+          // Ensure form is clean for different material
+          setFormData({});
+          form.resetFields();
+          setIsReadOnly(false);
+        }
+      } else {
+        console.log('No existing plant data found - starting fresh');
+        // Ensure form is clean for new material
+        setFormData({});
+        form.resetFields();
+        setIsReadOnly(false);
+      }
+    } catch (error) {
+      console.error('Failed to load plant-specific data:', error);
+      // Start fresh if loading fails
+      setFormData({});
+      form.resetFields();
+    }
+  }, [workflowData, workflowId, form]);
+
+  // Debug function to check plant data status
+  const debugPlantData = useCallback(async () => {
+    try {
+      if (workflowData?.assignedPlant && workflowData?.materialCode) {
+        const debugInfo = await workflowAPI.debugPlantData(
+          workflowData.assignedPlant, 
+          workflowData.materialCode
+        );
+        console.log('Plant Data Debug Info:', debugInfo);
+        message.info('Debug info logged to console');
+      } else {
+        message.warning('Plant code or material code not available');
+      }
+    } catch (error) {
+      console.error('Failed to get debug info:', error);
+      message.error('Failed to get debug info');
+    }
+  }, [workflowData]);
 
   const handleSaveDraft = useCallback(
     async (silent = false) => {
@@ -917,7 +1048,8 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
         });
 
         // Save to local storage as backup with enhanced metadata
-        const draftKey = `plant_questionnaire_draft_${workflowId}`;
+        // CRITICAL: Use material-specific key to prevent data cross-contamination
+        const draftKey = `plant_questionnaire_draft_${workflowId}_${workflowData?.materialCode}_${workflowData?.assignedPlant}`;
         const draftData = {
           formData: validatedFormData,
           currentStep,
@@ -927,6 +1059,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           materialCode: workflowData?.materialCode,
           materialName: workflowData?.materialName,
           assignedPlant: workflowData?.assignedPlant,
+          workflowId,
           lastSyncAttempt: Date.now(),
           syncStatus: isOffline ? 'pending' : 'synced',
           totalFields: Object.keys(validatedFormData).length,
@@ -946,24 +1079,67 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
             const draftData = {
               plantCode: workflowData?.assignedPlant,
               materialCode: workflowData?.materialCode,
-
-              responses: updatedFormData,
+              responses: validatedFormData, // CRITICAL FIX: Use validatedFormData instead of updatedFormData
               currentStep,
               completedSteps: Array.from(completedSteps),
               modifiedBy: 'current_user'
             };
 
-            await workflowAPI.saveDraftPlantResponses(workflowId, draftData);
+            console.log('PlantQuestionnaire: Saving draft with data:', {
+              plantCode: draftData.plantCode,
+              materialCode: draftData.materialCode,
+              responseCount: Object.keys(draftData.responses || {}).length,
+              workflowId
+            });
+            
+            // CRITICAL DEBUG: Log actual field names and values being sent
+            console.log('PlantQuestionnaire: Field names being sent:', Object.keys(draftData.responses || {}));
+            console.log('PlantQuestionnaire: Sample field values:', 
+              Object.entries(draftData.responses || {}).slice(0, 5).reduce((obj, [key, value]) => {
+                obj[key] = value;
+                return obj;
+              }, {}));
+            
+            // ENHANCED DEBUG: Compare with template field names
+            const templateFieldNames = questionnaireSteps.flatMap(step => 
+              (step.fields || []).map(field => field.name)
+            );
+            const plantFieldNames = questionnaireSteps.flatMap(step => 
+              (step.fields || []).filter(field => !field.isCqsAutoPopulated && !field.cqsAutoPopulated).map(field => field.name)
+            );
+            console.log('PlantQuestionnaire: Template field names (first 10):', templateFieldNames.slice(0, 10));
+            console.log('PlantQuestionnaire: Plant field names (first 10):', plantFieldNames.slice(0, 10));
+            console.log('PlantQuestionnaire: Field name matching analysis:');
+            console.log('  - Sent field names that match template:', Object.keys(draftData.responses || {}).filter(key => templateFieldNames.includes(key)));
+            console.log('  - Sent field names that DON\'T match template:', Object.keys(draftData.responses || {}).filter(key => !templateFieldNames.includes(key)));
+
+            const response = await workflowAPI.saveDraftPlantResponses(workflowId, draftData);
+
+            console.log('PlantQuestionnaire: Draft save response:', response);
 
             if (!silent) {
-              message.success('Draft saved successfully');
+              if (response.success) {
+                if (response.hasChanges) {
+                  message.success(`Draft saved successfully (${response.savedFields || 0} fields)`);
+                } else {
+                  // Don't show message for no changes to reduce noise
+                  console.log('No changes detected - draft not saved');
+                }
+              } else {
+                message.warning(response.message || 'Draft save may have failed');
+              }
             }
           } catch (serverError) {
             console.error('Failed to save draft to server:', serverError);
             setPendingChanges(true);
 
             if (!silent) {
-              message.warning('Draft saved locally. Will sync when connection is restored.');
+              // Check if it's a specific error response
+              if (serverError.response && serverError.response.data && serverError.response.data.message) {
+                message.error(`Draft save failed: ${serverError.response.data.message}`);
+              } else {
+                message.warning('Draft saved locally. Will sync when connection is restored.');
+              }
             }
           }
         } else {
@@ -987,7 +1163,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
         setSaving(false);
       }
     },
-    [form, formData, workflowId, onSaveDraft, currentStep, completedSteps, isOffline, workflowData, getOverallCompletionPercentage]
+    [form, formData, workflowId, onSaveDraft, currentStep, completedSteps, isOffline, workflowData, getOverallCompletionPercentage, questionnaireSteps]
   );
 
   const handleNext = useCallback(async () => {
@@ -1147,6 +1323,12 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
         handleSaveDraft();
       }
 
+      // Ctrl/Cmd + Shift + D for debug info
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'D') {
+        event.preventDefault();
+        debugPlantData();
+      }
+
       // Ctrl/Cmd + Right Arrow to go to next step
       if ((event.ctrlKey || event.metaKey) && event.key === 'ArrowRight') {
         event.preventDefault();
@@ -1196,7 +1378,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [currentStep, questionnaireSteps.length, handleNext, handlePrevious, handleSaveDraft]);
+  }, [currentStep, questionnaireSteps.length, handleNext, handlePrevious, handleSaveDraft, debugPlantData]);
 
   // Define functions before useEffect hooks that depend on them
   const loadWorkflowData = useCallback(async () => {
@@ -1265,8 +1447,9 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
   useEffect(() => {
     if (workflowData && workflowData.materialCode && workflowData.assignedPlant) {
       loadQuestionnaireTemplate();
+      loadPlantSpecificData();
     }
-  }, [workflowData, loadQuestionnaireTemplate]);
+  }, [workflowData, loadQuestionnaireTemplate, loadPlantSpecificData]);
 
   // Auto-save functionality with recovery
   useEffect(() => {
@@ -1470,13 +1653,30 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
   useEffect(() => {
     const recoverDraftData = () => {
       try {
-        const draftKey = `plant_questionnaire_draft_${workflowId}`;
+        // CRITICAL: Use material-specific key to prevent data cross-contamination
+        const draftKey = `plant_questionnaire_draft_${workflowId}_${workflowData?.materialCode}_${workflowData?.assignedPlant}`;
         const savedDraft = localStorage.getItem(draftKey);
 
         if (savedDraft) {
           const draftData = JSON.parse(savedDraft);
           const draftTimestamp = draftData.timestamp;
           const currentTime = Date.now();
+
+          // CRITICAL: Validate that draft belongs to current material/plant combination
+          const isDraftValid = draftData.materialCode === workflowData?.materialCode && 
+                              draftData.assignedPlant === workflowData?.assignedPlant &&
+                              draftData.workflowId === workflowId;
+
+          if (!isDraftValid) {
+            console.warn('Draft data mismatch - clearing invalid draft:', {
+              draftMaterial: draftData.materialCode,
+              currentMaterial: workflowData?.materialCode,
+              draftPlant: draftData.assignedPlant,
+              currentPlant: workflowData?.assignedPlant
+            });
+            localStorage.removeItem(draftKey);
+            return;
+          }
 
           // Only recover if draft is less than 7 days old (extended from 24 hours)
           if (currentTime - draftTimestamp < 7 * 24 * 60 * 60 * 1000) {
@@ -1543,7 +1743,8 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
         console.error('Failed to recover draft data:', error);
         // Remove corrupted draft
         try {
-          localStorage.removeItem(`plant_questionnaire_draft_${workflowId}`);
+          const draftKey = `plant_questionnaire_draft_${workflowId}_${workflowData?.materialCode}_${workflowData?.assignedPlant}`;
+          localStorage.removeItem(draftKey);
           notification.error({
             message: 'Draft Recovery Error',
             description: 'Failed to recover previous draft. Starting fresh.',
@@ -1794,16 +1995,32 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
       openQueries: queries.filter(q => q.status === 'OPEN').length
     };
 
-    await workflowAPI.submitPlantQuestionnaire(workflowId, submissionData);
+    const submitResult = await workflowAPI.submitPlantQuestionnaire(workflowId, submissionData);
+
+    console.log('Submission result:', submitResult);
 
     // Clear draft data after successful submission
     try {
-      localStorage.removeItem(`plant_questionnaire_draft_${workflowId}`);
+      const draftKey = `plant_questionnaire_draft_${workflowId}_${workflowData?.materialCode}_${workflowData?.assignedPlant}`;
+      localStorage.removeItem(draftKey);
+      console.log('Cleared draft data for submitted questionnaire:', draftKey);
     } catch (error) {
       console.warn('Failed to clear draft data:', error);
     }
 
-    message.success('Questionnaire submitted successfully');
+    // CRITICAL: Mark questionnaire as read-only after successful submission
+    if (submitResult.success) {
+      setIsReadOnly(true);
+      message.success('Questionnaire submitted successfully and marked as completed');
+      
+      // Refresh the page or redirect to prevent further editing
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } else {
+      message.error(submitResult.message || 'Submission failed - please try again');
+      return;
+    }
 
     if (onComplete) {
       onComplete(finalData);
@@ -1940,8 +2157,8 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
       );
     }
 
-    // Only disable if field is explicitly disabled, not just because it's CQS auto-populated
-    const isDisabled = field.disabled || false;
+    // Disable field if explicitly disabled, read-only, or CQS auto-populated
+    const isDisabled = field.disabled || isReadOnly || false;
 
     const inputProps = {
       className: `modern-input ${field.isCqsAutoPopulated ? 'cqs-auto-populated' : ''}`,
@@ -2209,7 +2426,7 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
   };
 
   return (
-    <div className="plant-questionnaire-container">
+    <div className={`plant-questionnaire-container ${isReadOnly ? 'read-only' : ''}`}>
       {/* Modern Header */}
       <div className="plant-questionnaire-header">
         <div className="plant-questionnaire-header-content">
@@ -2329,9 +2546,20 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
                 icon={<SaveOutlined />}
                 onClick={() => handleSaveDraft()}
                 loading={saving}
+                disabled={isReadOnly}
               >
-                Save Draft
+                {isReadOnly ? 'Read Only' : 'Save Draft'}
               </Button>
+              {process.env.NODE_ENV === 'development' && (
+                <Button
+                  className="modern-btn modern-btn-secondary"
+                  icon={<BugOutlined />}
+                  onClick={debugPlantData}
+                  title="Debug Plant Data (Ctrl+Shift+D)"
+                >
+                  Debug
+                </Button>
+              )}
               {isMobile && (
                 <Button
                   className="modern-btn modern-btn-secondary"
@@ -2345,6 +2573,18 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
           </div>
         </div>
       </div>
+
+      {/* Read-Only Alert */}
+      {isReadOnly && (
+        <Alert
+          message="Questionnaire Submitted"
+          description="This questionnaire has been submitted and is now read-only. No further changes can be made."
+          type="info"
+          showIcon
+          style={{ margin: '16px 0' }}
+          banner
+        />
+      )}
 
       {/* Main Content */}
       <div className="plant-questionnaire-main">
@@ -2628,15 +2868,79 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
 
 
                 {currentStep === questionnaireSteps.length - 1 ? (
-                  <Button
-                    className={`modern-btn modern-btn-primary ${getOverallCompletionPercentage() === 100 ? 'pulse-glow' : ''}`}
-                    onClick={handleSubmit}
-                    loading={submitting}
-                    size="large"
-                    style={{ minWidth: '160px' }}
-                  >
-                    {submitting ? 'Submitting...' : 'Submit Questionnaire'}
-                  </Button>
+                  <>
+                    <Button
+                      className={`modern-btn modern-btn-primary ${getOverallCompletionPercentage() === 100 ? 'pulse-glow' : ''}`}
+                      onClick={handleSubmit}
+                      loading={submitting}
+                      disabled={isReadOnly}
+                      size="large"
+                      style={{ minWidth: '160px' }}
+                    >
+                      {isReadOnly ? 'Submitted' : submitting ? 'Submitting...' : 'Submit Questionnaire'}
+                    </Button>
+                    
+                    {/* DEBUG BUTTON - Remove in production */}
+                    <Button
+                      onClick={async () => {
+                        console.log('=== FIELD DEBUG ANALYSIS ===');
+                        const currentValues = form.getFieldsValue();
+                        const allData = { ...formData, ...currentValues, ...cqsFormData };
+                        
+                        console.log('1. Current form values:', Object.keys(currentValues).length, 'fields');
+                        console.log('2. Form data state:', Object.keys(formData).length, 'fields');
+                        console.log('3. CQS form data:', Object.keys(cqsFormData).length, 'fields');
+                        console.log('4. Combined data:', Object.keys(allData).length, 'fields');
+                        
+                        // Show template vs actual data
+                        const templateFields = questionnaireSteps.flatMap(step => step.fields || []);
+                        const plantFields = templateFields.filter(f => !f.isCqsAutoPopulated && !f.cqsAutoPopulated);
+                        const cqsFields = templateFields.filter(f => f.isCqsAutoPopulated || f.cqsAutoPopulated);
+                        
+                        console.log('5. Template analysis:');
+                        console.log('   - Total template fields:', templateFields.length);
+                        console.log('   - Plant fields in template:', plantFields.length);
+                        console.log('   - CQS fields in template:', cqsFields.length);
+                        
+                        console.log('6. Field completion analysis:');
+                        let filledPlantFields = 0;
+                        let filledCqsFields = 0;
+                        
+                        plantFields.forEach(field => {
+                          const value = allData[field.name];
+                          const isFilled = value && value !== '' && value !== null && value !== undefined;
+                          if (isFilled) filledPlantFields++;
+                          if (!isFilled) console.log(`   - Empty plant field: ${field.name}`);
+                        });
+                        
+                        cqsFields.forEach(field => {
+                          const value = allData[field.name];
+                          const isFilled = value && value !== '' && value !== null && value !== undefined && value !== 'Data not available';
+                          if (isFilled) filledCqsFields++;
+                        });
+                        
+                        console.log(`   - Filled plant fields: ${filledPlantFields}/${plantFields.length}`);
+                        console.log(`   - Filled CQS fields: ${filledCqsFields}/${cqsFields.length}`);
+                        console.log(`   - Total completion: ${filledPlantFields + filledCqsFields}/${templateFields.length} (${Math.round((filledPlantFields + filledCqsFields) / templateFields.length * 100)}%)`);
+                        
+                        // Test backend debug endpoint
+                        try {
+                          const debugResponse = await fetch(`/api/v1/plant-questionnaire/debug-fields/${workflowData?.assignedPlant}/${workflowData?.materialCode}`);
+                          const debugData = await debugResponse.json();
+                          console.log('7. Backend debug response:', debugData);
+                        } catch (error) {
+                          console.error('Failed to get backend debug info:', error);
+                        }
+                        
+                        message.info('Debug analysis complete - check browser console for details');
+                      }}
+                      style={{ marginLeft: 8 }}
+                      icon={<BugOutlined />}
+                      size="large"
+                    >
+                      Debug
+                    </Button>
+                  </>
                 ) : (
                   <Button
                     className="modern-btn modern-btn-primary"
@@ -2798,8 +3102,9 @@ const PlantQuestionnaire = ({ workflowId, onComplete, onSaveDraft }) => {
         >
           <FloatButton
             icon={<SaveOutlined />}
-            tooltip="Save Draft"
+            tooltip={isReadOnly ? "Read Only" : "Save Draft"}
             onClick={() => handleSaveDraft()}
+            disabled={isReadOnly}
           />
           <FloatButton
             icon={<DashboardOutlined />}

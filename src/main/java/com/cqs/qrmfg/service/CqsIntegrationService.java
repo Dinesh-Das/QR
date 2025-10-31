@@ -76,6 +76,8 @@ public class CqsIntegrationService {
         mapCqsField(cqsData, "narcotic_listed", cqsEntity.getNarcoticListed());
         mapCqsField(cqsData, "spill_measures_provided", cqsEntity.getSpillMeasuresProvided());
         mapCqsField(cqsData, "reproductive_toxicants", cqsEntity.getReproductiveToxicants());
+        // CRITICAL FIX: Map both singular and plural forms for reproductive toxicant field
+        mapCqsField(cqsData, "reproductive_toxicant", cqsEntity.getReproductiveToxicants());
         mapCqsField(cqsData, "silica_content", cqsEntity.getSilicaContent());
         mapCqsField(cqsData, "swarf_analysis", cqsEntity.getSwarfAnalysis());
         mapCqsField(cqsData, "env_toxic", cqsEntity.getEnvToxic());
@@ -133,7 +135,7 @@ public class CqsIntegrationService {
             "narcotic_listed", "flash_point_65", "petroleum_class", "flash_point_21",
             "is_corrosive", "highly_toxic", "spill_measures_provided", "is_poisonous",
             "antidote_specified", "cmvr_listed", "msihc_listed", "factories_act_listed",
-            "recommended_ppe", "reproductive_toxicants", "silica_content", "swarf_analysis",
+            "recommended_ppe", "reproductive_toxicants", "reproductive_toxicant", "silica_content", "swarf_analysis",
             "env_toxic", "hhrm_category", "psm_tier1_outdoor", "psm_tier1_indoor",
             "psm_tier2_outdoor", "psm_tier2_indoor", "compatibility_class", "sap_compatibility",
             "is_explosive", "autoignition_temp", "dust_explosion", "electrostatic_charge",
@@ -233,6 +235,7 @@ public class CqsIntegrationService {
         mapping.put("factories_act_listed", "Factories Act Listed");
         mapping.put("recommended_ppe", "Recommended PPE");
         mapping.put("reproductive_toxicants", "Reproductive Toxicants");
+        mapping.put("reproductive_toxicant", "Reproductive Toxicant");
         mapping.put("silica_content", "Silica Content");
         mapping.put("swarf_analysis", "SWARF Analysis");
         mapping.put("env_toxic", "Environmental Toxic");
@@ -393,6 +396,8 @@ public class CqsIntegrationService {
         cqsDataMap.put("narcotic_listed", cqsEntity.getNarcoticListed());
         cqsDataMap.put("spill_measures_provided", cqsEntity.getSpillMeasuresProvided());
         cqsDataMap.put("reproductive_toxicants", cqsEntity.getReproductiveToxicants());
+        // CRITICAL FIX: Map both singular and plural forms for reproductive toxicant field
+        cqsDataMap.put("reproductive_toxicant", cqsEntity.getReproductiveToxicants());
         cqsDataMap.put("silica_content", cqsEntity.getSilicaContent());
         cqsDataMap.put("swarf_analysis", cqsEntity.getSwarfAnalysis());
         cqsDataMap.put("env_toxic", cqsEntity.getEnvToxic());
@@ -438,5 +443,89 @@ public class CqsIntegrationService {
         }
         
         return stats;
+    }
+    
+    /**
+     * Fix empty CQS inputs in plant-specific data table
+     * This method finds all plant records that have empty CQS inputs but should have CQS data
+     */
+    @Transactional
+    public Map<String, Object> fixEmptyCqsInputs() {
+        Map<String, Object> result = new HashMap<>();
+        int fixedCount = 0;
+        int skippedCount = 0;
+        int errorCount = 0;
+        
+        try {
+            // Get all plant-specific data records
+            List<PlantSpecificData> allRecords = plantSpecificDataRepository.findAll();
+            
+            for (PlantSpecificData plantRecord : allRecords) {
+                try {
+                    String materialCode = plantRecord.getMaterialCode();
+                    
+                    // Check if CQS inputs is empty or null
+                    boolean cqsInputsEmpty = plantRecord.getCqsInputs() == null || 
+                                           plantRecord.getCqsInputs().trim().isEmpty() || 
+                                           "{}".equals(plantRecord.getCqsInputs().trim());
+                    
+                    if (cqsInputsEmpty) {
+                        // Check if CQS data exists for this material
+                        if (cqsRepository.existsByMaterialCode(materialCode)) {
+                            // Get CQS data and sync it
+                            Optional<QrmfgAutoCqs> cqsDataOpt = cqsRepository.findByMaterialCode(materialCode);
+                            if (cqsDataOpt.isPresent()) {
+                                QrmfgAutoCqs cqsData = cqsDataOpt.get();
+                                
+                                // Convert CQS data to JSON format
+                                Map<String, Object> cqsDataMap = convertCqsEntityToMap(cqsData);
+                                String cqsJsonData = objectMapper.writeValueAsString(cqsDataMap);
+                                
+                                // Update the plant record with CQS data
+                                plantRecord.updateCqsData(cqsJsonData, "SYSTEM_FIX");
+                                plantSpecificDataRepository.save(plantRecord);
+                                
+                                fixedCount++;
+                                System.out.println("Fixed CQS inputs for " + plantRecord.getPlantCode() + "/" + materialCode);
+                            } else {
+                                skippedCount++;
+                            }
+                        } else {
+                            // No CQS data available for this material
+                            plantRecord.setCqsSyncStatus("NO_DATA");
+                            plantRecord.setLastCqsSync(LocalDateTime.now());
+                            plantRecord.setUpdatedBy("SYSTEM_FIX");
+                            plantSpecificDataRepository.save(plantRecord);
+                            skippedCount++;
+                        }
+                    } else {
+                        // CQS inputs already populated
+                        skippedCount++;
+                    }
+                    
+                } catch (Exception e) {
+                    System.err.println("Error fixing CQS inputs for " + plantRecord.getPlantCode() + "/" + 
+                                     plantRecord.getMaterialCode() + ": " + e.getMessage());
+                    errorCount++;
+                }
+            }
+            
+            result.put("message", "CQS inputs fix completed");
+            result.put("totalRecords", allRecords.size());
+            result.put("fixedRecords", fixedCount);
+            result.put("skippedRecords", skippedCount);
+            result.put("errorRecords", errorCount);
+            result.put("timestamp", LocalDateTime.now());
+            
+            System.out.println("CQS inputs fix completed: " + fixedCount + " fixed, " + 
+                             skippedCount + " skipped, " + errorCount + " errors");
+            
+        } catch (Exception e) {
+            result.put("error", "Failed to fix CQS inputs");
+            result.put("message", e.getMessage());
+            System.err.println("Failed to fix empty CQS inputs: " + e.getMessage());
+        }
+        
+        return result;
     }
 }

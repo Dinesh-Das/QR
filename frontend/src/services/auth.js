@@ -513,6 +513,7 @@ export const hasScreenAccess = screenRoute => {
 
   // Define screen access rules based on role
   const screenAccessMap = {
+    '/qrmfg/': true, 
     '/qrmfg': true, // Home accessible to all authenticated users
     '/qrmfg/dashboard': true, // Dashboard accessible to all
     '/qrmfg/login': true, // Login accessible to all

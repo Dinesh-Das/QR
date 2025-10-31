@@ -7,6 +7,22 @@
   overflow-x: hidden;
 }
 
+/* Read-only mode styling */
+.plant-questionnaire-container.read-only {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.plant-questionnaire-container.read-only .modern-input {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #64748b !important;
+  cursor: not-allowed;
+}
+
+.plant-questionnaire-container.read-only .ant-form-item-label > label {
+  color: #64748b !important;
+}
+
 .plant-questionnaire-header {
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(20px);

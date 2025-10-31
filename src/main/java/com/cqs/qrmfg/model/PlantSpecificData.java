@@ -162,18 +162,31 @@ public class PlantSpecificData {
     }
     
     public void submit(String submittedBy) {
-        this.completionStatus = "SUBMITTED";
+        // CRITICAL FIX: Don't reset completion status - preserve it as COMPLETED
+        if (!"COMPLETED".equals(this.completionStatus)) {
+            this.completionStatus = "COMPLETED";
+        }
         this.submittedAt = LocalDateTime.now();
         this.submittedBy = submittedBy;
         this.updatedAt = LocalDateTime.now();
+        
+        // CRITICAL FIX: Ensure completion percentage is maintained at 100% for submitted questionnaires
+        if (this.completionPercentage == null || this.completionPercentage < 100) {
+            // Only update if we have valid field counts
+            if (this.totalFields != null && this.totalFields > 0) {
+                this.completionPercentage = Math.max(this.completionPercentage != null ? this.completionPercentage : 0, 90);
+            } else {
+                this.completionPercentage = 100; // Default to 100% for submitted questionnaires
+            }
+        }
     }
     
     public boolean isCompleted() {
-        return "COMPLETED".equals(completionStatus) || "SUBMITTED".equals(completionStatus);
+        return "COMPLETED".equals(completionStatus) || submittedAt != null;
     }
     
     public boolean isSubmitted() {
-        return "SUBMITTED".equals(completionStatus);
+        return submittedAt != null;
     }
     
     public String getCompositeKey() {

@@ -440,4 +440,21 @@ public class CqsAdminController {
             return ResponseEntity.badRequest().body(errorResult);
         }
     }
+    
+    /**
+     * Fix empty CQS inputs in plant-specific data table
+     * This method finds all plant records that have empty CQS inputs but should have CQS data
+     */
+    @PostMapping("/fix-empty-cqs-inputs")
+    public ResponseEntity<Map<String, Object>> fixEmptyCqsInputs() {
+        try {
+            Map<String, Object> result = cqsIntegrationService.fixEmptyCqsInputs();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("error", "Failed to fix empty CQS inputs");
+            errorResult.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResult);
+        }
+    }
 }

@@ -447,6 +447,10 @@ export const workflowAPI = {
   saveDraftPlantResponses: (workflowId, draftData) =>
     apiClient.post(`/plant-questionnaire/draft?workflowId=${workflowId}`, draftData),
 
+  // Debug plant-specific data
+  debugPlantData: (plantCode, materialCode) =>
+    apiClient.get(`/plant-questionnaire/debug/${encodeURIComponent(plantCode)}/${encodeURIComponent(materialCode)}`),
+
   submitPlantQuestionnaire: (workflowId, submissionData) =>
     apiClient.post(`/plant-questionnaire/submit?workflowId=${workflowId}`, submissionData),
 

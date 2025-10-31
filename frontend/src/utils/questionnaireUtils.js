@@ -56,6 +56,15 @@ export const getDefaultQuestionnaireTemplate = () => [
     ]
   },
   {
+    title: 'Process Safety Management',
+    fields: [
+      { name: 'psm_tier1_outdoor', isCqsAutoPopulated: true },
+      { name: 'psm_tier1_indoor', isCqsAutoPopulated: true },
+      { name: 'psm_tier2_outdoor', isCqsAutoPopulated: true },
+      { name: 'psm_tier2_indoor', isCqsAutoPopulated: true }
+    ]
+  },
+  {
     title: 'Storage and Handling',
     fields: [
       { name: 'storage_conditions_stores', isCqsAutoPopulated: false },
