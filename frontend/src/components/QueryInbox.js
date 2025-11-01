@@ -18,7 +18,6 @@ import {
   Form,
   Input,
   Select,
-  Tooltip,
   Alert,
   Row,
   Col,
@@ -39,7 +38,6 @@ import QueryDocumentList from './QueryDocumentList';
 import QueryDocumentUpload from './QueryDocumentUpload';
 import QueryHistoryTracker from './QueryHistoryTracker';
 
-
 const { TextArea } = Input;
 const { Option } = Select;
 const { Text, Title } = Typography;
@@ -49,8 +47,7 @@ const QueryInbox = ({ team }) => {
   const [queries, setQueries] = useState([]);
   const [filteredQueries, setFilteredQueries] = useState([]);
   const [selectedQuery, setSelectedQuery] = useState(null);
-  const [resolveModalVisible, setResolveModalVisible] = useState(false);
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [queryModalVisible, setQueryModalVisible] = useState(false);
   const [resolveForm] = Form.useForm();
   const [responseDocuments, setResponseDocuments] = useState([]);
   const [responseId, setResponseId] = useState(null);
@@ -204,18 +201,18 @@ const QueryInbox = ({ team }) => {
       };
 
       const resolvedQuery = await apiClient.put(`/queries/${selectedQuery.id}/resolve`, resolveData);
-      
+
       // Set response ID for document uploads
       if (resolvedQuery.responseId) {
         setResponseId(resolvedQuery.responseId);
       }
 
-      const documentMessage = responseDocuments.length > 0 
+      const documentMessage = responseDocuments.length > 0
         ? ` with ${responseDocuments.length} document(s) attached`
         : '';
       message.success(`Query resolved successfully${documentMessage}`);
-      
-      setResolveModalVisible(false);
+
+      setQueryModalVisible(false);
       resolveForm.resetFields();
       setSelectedQuery(null);
       setResponseDocuments([]);
@@ -399,26 +396,12 @@ const QueryInbox = ({ team }) => {
             icon={<EyeOutlined />}
             onClick={() => {
               setSelectedQuery(record);
-              setDetailModalVisible(true);
+              setQueryModalVisible(true);
               loadQueryDocuments(record.id);
             }}
           >
             View
           </Button>
-          {record.status === QUERY_STATUS.OPEN && (
-            <Button
-              size="small"
-              type="primary"
-              icon={<CheckCircleOutlined />}
-              onClick={() => {
-                setSelectedQuery(record);
-                setResolveModalVisible(true);
-                loadQueryDocuments(record.id);
-              }}
-            >
-              Resolve
-            </Button>
-          )}
         </Space>
       )
     }
@@ -648,41 +631,50 @@ const QueryInbox = ({ team }) => {
             />
           </Card>
         </AsyncErrorBoundary>
-
-        {/* Enhanced Query Detail Modal */}
+        {/* Unified Query Modal - Single View */}
         <Modal
-          title={`Query #${selectedQuery?.id} Details`}
-          open={detailModalVisible}
+          title={`Query #${selectedQuery?.id} - Details`}
+          open={queryModalVisible}
           onCancel={() => {
-            setDetailModalVisible(false);
+            setQueryModalVisible(false);
             setSelectedQuery(null);
             setQueryDocuments([]);
+            resolveForm.resetFields();
+            setResponseDocuments([]);
+            setResponseId(null);
           }}
           footer={[
-            <Button key="close" onClick={() => setDetailModalVisible(false)}>
+            <Button
+              key="close"
+              onClick={() => {
+                setQueryModalVisible(false);
+                setSelectedQuery(null);
+                setQueryDocuments([]);
+                resolveForm.resetFields();
+                setResponseDocuments([]);
+                setResponseId(null);
+              }}
+            >
               Close
             </Button>,
             selectedQuery?.status === QUERY_STATUS.OPEN && (
               <Button
                 key="resolve"
                 type="primary"
-                onClick={() => {
-                  setDetailModalVisible(false);
-                  setResolveModalVisible(true);
-                  loadQueryDocuments(selectedQuery.id);
-                }}
+                onClick={() => resolveForm.submit()}
+                size="large"
               >
                 Resolve Query
               </Button>
             )
           ]}
-          width={1200}
+          width={1400}
         >
           {selectedQuery && (
             <Row gutter={16}>
-              <Col span={14}>
-                {/* Query Details */}
-                <div>
+              <Col span={16}>
+                {/* Query Details Section */}
+                <div style={{ marginBottom: 24 }}>
                   <Row gutter={16}>
                     <Col span={12}>
                       <Text strong>Material Code:</Text> {selectedQuery.materialCode}
@@ -730,52 +722,48 @@ const QueryInbox = ({ team }) => {
                   <Divider />
 
                   {/* Enhanced Context Information */}
-                  {(selectedQuery.projectCode ||
-                    selectedQuery.plantCode) && (
-                      <>
-                        <Row gutter={16}>
-                          {selectedQuery.projectCode && (
-                            <Col span={8}>
-                              <Text strong>Project:</Text> {selectedQuery.projectCode}
-                            </Col>
-                          )}
-                          {selectedQuery.plantCode && (
-                            <Col span={8}>
-                              <Text strong>Plant:</Text> {selectedQuery.plantCode}
-                            </Col>
-                          )}
-
-                        </Row>
-                        <Divider />
-                      </>
-                    )}
+                  {(selectedQuery.projectCode || selectedQuery.plantCode) && (
+                    <>
+                      <Row gutter={16}>
+                        {selectedQuery.projectCode && (
+                          <Col span={8}>
+                            <Text strong>Project:</Text> {selectedQuery.projectCode}
+                          </Col>
+                        )}
+                        {selectedQuery.plantCode && (
+                          <Col span={8}>
+                            <Text strong>Plant:</Text> {selectedQuery.plantCode}
+                          </Col>
+                        )}
+                      </Row>
+                      <Divider />
+                    </>
+                  )}
 
                   {/* Field Context Section */}
                   {selectedQuery.fieldName && (
-                    <>
-                      <div style={{ marginBottom: 16 }}>
-                        <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
-                          Field Context
-                        </Text>
-                        <div style={{ 
-                          marginTop: 8, 
-                          padding: 12, 
-                          background: '#e6f7ff', 
-                          borderRadius: 6,
-                          border: '1px solid #91d5ff'
-                        }}>
-                          <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
-                            {selectedQuery.fieldName}
-                          </div>
-                          {selectedQuery.stepNumber && (
-                            <div style={{ fontSize: '12px', color: '#666', marginTop: 4 }}>
-                              Step {selectedQuery.stepNumber}
-                              {selectedQuery.stepTitle && `: ${selectedQuery.stepTitle}`}
-                            </div>
-                          )}
+                    <div style={{ marginBottom: 16 }}>
+                      <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
+                        Field Context
+                      </Text>
+                      <div style={{
+                        marginTop: 8,
+                        padding: 12,
+                        background: '#e6f7ff',
+                        borderRadius: 6,
+                        border: '1px solid #91d5ff'
+                      }}>
+                        <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                          {selectedQuery.fieldName}
                         </div>
+                        {selectedQuery.stepNumber && (
+                          <div style={{ fontSize: '12px', color: '#666', marginTop: 4 }}>
+                            Step {selectedQuery.stepNumber}
+                            {selectedQuery.stepTitle && `: ${selectedQuery.stepTitle}`}
+                          </div>
+                        )}
                       </div>
-                    </>
+                    </div>
                   )}
 
                   {/* Original Question Section */}
@@ -856,26 +844,6 @@ const QueryInbox = ({ team }) => {
                     </>
                   )}
 
-                  {/* Query Documents */}
-                  {queryDocuments.length > 0 && (
-                    <>
-                      <Divider />
-                      <Text strong>
-                        <Space>
-                          <PaperClipOutlined />
-                          Attached Documents ({queryDocuments.length})
-                        </Space>
-                      </Text>
-                      <div style={{ marginTop: 8 }}>
-                        <QueryDocumentList 
-                          documents={queryDocuments}
-                          showActions={true}
-                          compact={false}
-                        />
-                      </div>
-                    </>
-                  )}
-
                   <Divider />
                   <div style={{ fontSize: '12px', color: '#666' }}>
                     <div>Raised by: {selectedQuery.raisedBy}</div>
@@ -886,228 +854,109 @@ const QueryInbox = ({ team }) => {
                     </div>
                   </div>
                 </div>
-              </Col>
-              <Col span={10}>
-                {/* Material Context and Query History */}
-                <ComponentErrorBoundary componentName="MaterialContextDisplay">
-                  <MaterialContextDisplay
-                    materialCode={selectedQuery.materialCode}
-                    workflowId={selectedQuery.workflowId}
-                    compact={true}
-                  />
-                </ComponentErrorBoundary>
-                <ComponentErrorBoundary componentName="QueryHistoryTracker">
-                  <QueryHistoryTracker
-                    materialCode={selectedQuery.materialCode}
-                    workflowId={selectedQuery.workflowId}
-                    compact={true}
-                  />
-                </ComponentErrorBoundary>
-              </Col>
-            </Row>
-          )}
-        </Modal>
 
-        {/* Enhanced Resolve Query Modal */}
-        <Modal
-          title={`Resolve Query #${selectedQuery?.id}`}
-          open={resolveModalVisible}
-          onCancel={() => {
-            setResolveModalVisible(false);
-            resolveForm.resetFields();
-            setSelectedQuery(null);
-            setResponseDocuments([]);
-            setResponseId(null);
-            setQueryDocuments([]);
-          }}
-          onOk={() => resolveForm.submit()}
-          width={1400}
-          okText="Resolve Query"
-          okButtonProps={{
-            type: 'primary',
-            size: 'large'
-          }}
-          cancelButtonProps={{
-            size: 'large'
-          }}
-        >
-          {selectedQuery && (
-            <Row gutter={16}>
-              <Col span={16}>
-                {/* Query Context */}
-                <div
-                  style={{
-                    marginBottom: 16,
-                    padding: 16,
-                    background: '#f5f5f5',
-                    borderRadius: 6,
-                    border: '1px solid #d9d9d9'
-                  }}
-                >
-                  <Row gutter={16} style={{ marginBottom: 12 }}>
-                    <Col span={12}>
-                      <Text strong>Material:</Text> {selectedQuery.materialCode}
-                      {selectedQuery.materialName && (
-                        <div style={{ fontSize: '12px', color: '#666' }}>
-                          {selectedQuery.materialName}
-                        </div>
-                      )}
-                    </Col>
-                    <Col span={12}>
-                      <Space>
-                        <Text strong>Team:</Text>
-                        <Tag
-                          color={
-                            selectedQuery.assignedTeam === TEAM_NAMES.CQS
-                              ? 'blue'
-                              : selectedQuery.assignedTeam === TEAM_NAMES.TECH
-                                ? 'purple'
-                                : 'orange'
-                          }
-                        >
-                          {selectedQuery.assignedTeam}
-                        </Tag>
-                        <Text strong>Priority:</Text>
-                        <Tag color={getPriorityColor(selectedQuery.priorityLevel)}>
-                          {selectedQuery.priorityLevel || 'MEDIUM'}
-                        </Tag>
-                      </Space>
-                    </Col>
-                  </Row>
-
-                  {(selectedQuery.projectCode ||
-                    selectedQuery.plantCode) && (
-                      <Row gutter={16} style={{ marginBottom: 12 }}>
-                        {selectedQuery.projectCode && (
-                          <Col span={8}>
-                            <Text strong>Project:</Text> {selectedQuery.projectCode}
-                          </Col>
-                        )}
-                        {selectedQuery.plantCode && (
-                          <Col span={8}>
-                            <Text strong>Plant:</Text> {selectedQuery.plantCode}
-                          </Col>
-                        )}
-
-                      </Row>
-                    )}
-
-                  <Text strong>Question:</Text>
-                  <div style={{ marginTop: 8, whiteSpace: 'pre-wrap', fontSize: '14px' }}>
-                    {selectedQuery.question}
-                  </div>
-
-                  {selectedQuery.fieldName && (
-                    <div style={{ marginTop: 8 }}>
-                      <Text strong>Field Context:</Text> {selectedQuery.fieldName}
-                      {selectedQuery.stepNumber && ` (Step ${selectedQuery.stepNumber})`}
-                    </div>
-                  )}
-
-                  <div style={{ marginTop: 8, fontSize: '12px', color: '#666' }}>
-                    <Space>
-                      <span>Raised by: {selectedQuery.raisedBy}</span>
-                      <span>•</span>
-                      <span>
-                        {selectedQuery.createdAt &&
-                          new Date(selectedQuery.createdAt).toLocaleString()}
-                      </span>
-                      <span>•</span>
-                      <span style={{ color: getDaysOpenColor(selectedQuery.daysOpen) }}>
-                        {selectedQuery.daysOpen} days open
-                      </span>
-                    </Space>
-                  </div>
-                </div>
-
-                {/* Resolution Form */}
-                <Form form={resolveForm} layout="vertical" onFinish={handleResolveQuery}>
-                  <Form.Item
-                    name="response"
-                    label={
-                      <Space>
-                        <span>Resolution Response</span>
-                        <Text type="secondary">(Required)</Text>
-                      </Space>
-                    }
-                    rules={[{ required: true, message: 'Please provide a resolution response' }]}
-                  >
-                    <TextArea
-                      rows={8}
-                      placeholder="Provide detailed resolution or answer to the query. Include any relevant technical details, safety considerations, or references to documentation..."
-                      showCount
-                      maxLength={2000}
-                      style={{
-                        direction: 'ltr',
-                        textAlign: 'left',
-                        fontFamily: 'inherit'
-                      }}
-                    />
-                  </Form.Item>
-
-                  {/* Existing Query Documents */}
-                  {queryDocuments.length > 0 && (
-                    <Form.Item label={
+                {/* Documents Section */}
+                {queryDocuments.length > 0 && (
+                  <div style={{ marginBottom: 24 }}>
+                    <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
                       <Space>
                         <PaperClipOutlined />
-                        <span>Query Documents</span>
-                        <Text type="secondary">(For context while responding)</Text>
+                        Attached Documents ({queryDocuments.length})
                       </Space>
-                    }>
-                      <QueryDocumentList 
+                    </Text>
+                    <div style={{ marginTop: 8 }}>
+                      <QueryDocumentList
                         documents={queryDocuments}
-                        showActions={false}
-                        compact={true}
+                        showActions={true}
+                        compact={false}
                       />
-                    </Form.Item>
-                  )}
+                    </div>
+                  </div>
+                )}
 
-                  {/* Response Document Upload */}
-                  <Form.Item label={
-                    <Space>
-                      <PaperClipOutlined />
-                      <span>Attach Documents to Response</span>
-                      <Text type="secondary">(Optional)</Text>
-                    </Space>
-                  }>
-                    <QueryDocumentUpload
-                      queryId={selectedQuery?.id}
-                      responseId={responseId}
-                      context="response"
-                      onUploadComplete={handleResponseDocumentUpload}
-                      maxFiles={5}
-                      disabled={false}
-                    />
-                  </Form.Item>
+                {/* Resolution Form - Only for Open Queries */}
+                {selectedQuery?.status === QUERY_STATUS.OPEN && (
+                  <div>
+                    <Divider />
+                    <Text strong style={{ fontSize: '18px', color: '#52c41a' }}>
+                      <Space>
+                        <CheckCircleOutlined />
+                        Resolve Query
+                      </Space>
+                    </Text>
 
-                  <Row gutter={16}>
-                    <Col span={12}>
+                    <Form form={resolveForm} layout="vertical" onFinish={handleResolveQuery} style={{ marginTop: 16 }}>
                       <Form.Item
-                        name="priorityLevel"
-                        label="Update Priority (Optional)"
-                        initialValue={selectedQuery.priorityLevel || 'MEDIUM'}
+                        name="response"
+                        label={
+                          <Space>
+                            <span>Resolution Response</span>
+                            <Text type="secondary">(Required)</Text>
+                          </Space>
+                        }
+                        rules={[{ required: true, message: 'Please provide a resolution response' }]}
                       >
-                        <Select size="large">
-                          <Option value="LOW">Low Priority</Option>
-                          <Option value="MEDIUM">Medium Priority</Option>
-                          <Option value="HIGH">High Priority</Option>
-                          <Option value="URGENT">Urgent Priority</Option>
-                        </Select>
+                        <TextArea
+                          rows={6}
+                          placeholder="Provide detailed resolution or answer to the query. Include any relevant technical details, safety considerations, or references to documentation..."
+                          showCount
+                          maxLength={2000}
+                          style={{
+                            direction: 'ltr',
+                            textAlign: 'left',
+                            fontFamily: 'inherit'
+                          }}
+                        />
                       </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <div style={{ marginTop: 30 }}>
-                        <Text type="secondary">
-                          This resolution will be sent to the plant team and the workflow will
-                          continue.
-                        </Text>
-                      </div>
-                    </Col>
-                  </Row>
-                </Form>
+
+                      {/* Document Upload for Response */}
+                      <Form.Item label={
+                        <Space>
+                          <PaperClipOutlined />
+                          <span>Attach Documents to Response</span>
+                          <Text type="secondary">(Optional)</Text>
+                        </Space>
+                      }>
+                        <QueryDocumentUpload
+                          queryId={selectedQuery?.id}
+                          responseId={responseId}
+                          context="response"
+                          onUploadComplete={handleResponseDocumentUpload}
+                          maxFiles={5}
+                          disabled={false}
+                        />
+                      </Form.Item>
+
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <Form.Item
+                            name="priorityLevel"
+                            label="Update Priority (Optional)"
+                            initialValue={selectedQuery.priorityLevel || 'MEDIUM'}
+                          >
+                            <Select size="large">
+                              <Option value="LOW">Low Priority</Option>
+                              <Option value="MEDIUM">Medium Priority</Option>
+                              <Option value="HIGH">High Priority</Option>
+                              <Option value="URGENT">Urgent Priority</Option>
+                            </Select>
+                          </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                          <div style={{ marginTop: 30 }}>
+                            <Text type="secondary">
+                              This resolution will be sent to the plant team and the workflow will
+                              continue.
+                            </Text>
+                          </div>
+                        </Col>
+                      </Row>
+                    </Form>
+                  </div>
+                )}
               </Col>
               <Col span={8}>
-                {/* Context and History */}
+                {/* Shared Material Context and Query History */}
                 <ComponentErrorBoundary componentName="MaterialContextDisplay">
                   <MaterialContextDisplay
                     materialCode={selectedQuery.materialCode}

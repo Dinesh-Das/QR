@@ -198,13 +198,14 @@ class RBACService {
       { key: '/qrmfg/qr-analytics', icon: 'MonitorOutlined', label: 'QR Analytics', path: '/qrmfg/qr-analytics' }
     );
 
-    // Tech users get specific admin tools they need for their work
-    if (isTechUser() && !isAdmin()) {
-      roleBasedItems.push(
-        { key: '/qrmfg/auditlogs', icon: 'AuditOutlined', label: 'Audit Logs', path: '/qrmfg/auditlogs' },
-        { key: '/qrmfg/api-test', icon: 'ApiOutlined', label: 'API Test', path: '/qrmfg/api-test' }
-      );
-    }
+    // Tech users no longer get access to Audit Logs and API Test sections
+    // These are now restricted to Admin users only
+    // if (isTechUser() && !isAdmin()) {
+    //   roleBasedItems.push(
+    //     { key: '/qrmfg/auditlogs', icon: 'AuditOutlined', label: 'Audit Logs', path: '/qrmfg/auditlogs' },
+    //     { key: '/qrmfg/api-test', icon: 'ApiOutlined', label: 'API Test', path: '/qrmfg/api-test' }
+    //   );
+    // }
 
     if (isPlantUser() || isAdmin()) {
       roleBasedItems.push({ key: '/qrmfg/plant', icon: 'BankOutlined', label: 'PLANT', path: '/qrmfg/plant' });
@@ -269,8 +270,8 @@ class RBACService {
       '/roles': isAdmin(),
       '/sessions': isAdmin(),
       '/user-role-management': isAdmin(),
-      '/auditlogs': isAdmin() || isTechUser(),
-      '/api-test': isAdmin() || isTechUser(),
+      '/auditlogs': isAdmin(),
+      '/api-test': isAdmin(),
       '/jvc': isJvcUser() || isAdmin(),
       '/cqs': isCqsUser() || isAdmin(),
       '/tech': isTechUser() || isAdmin(),
@@ -306,7 +307,7 @@ class RBACService {
 
     if (isJvcUser()) screens.push('/qrmfg/jvc', '/qrmfg/workflows');
     if (isCqsUser()) screens.push('/qrmfg/cqs', '/qrmfg/workflows');
-    if (isTechUser()) screens.push('/qrmfg/tech', '/qrmfg/workflows', '/qrmfg/auditlogs', '/qrmfg/api-test');
+    if (isTechUser()) screens.push('/qrmfg/tech', '/qrmfg/workflows');
     if (isPlantUser()) screens.push('/qrmfg/plant', '/qrmfg/workflows');
     if (!isViewer()) screens.push('/qrmfg/reports');
     
@@ -326,7 +327,7 @@ class RBACService {
       'document': isJvcUser() || isCqsUser() || isTechUser() || isPlantUser(),
       'user': isAdmin(),
       'role': isAdmin(),
-      'audit': isAdmin() || isTechUser(),
+      'audit': isAdmin(),
       'report': !isViewer()
     };
 

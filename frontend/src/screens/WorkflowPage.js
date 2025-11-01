@@ -1,7 +1,6 @@
 import {
   DashboardOutlined,
   QuestionCircleOutlined,
-  HistoryOutlined,
   ReloadOutlined,
   FileTextOutlined,
   InfoCircleOutlined,
@@ -28,7 +27,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import apiClient from '../api/client';
-import AuditTimeline from '../components/AuditTimeline';
 import QueryWidget from '../components/QueryWidget';
 import { PAGINATION, WORKFLOW_STATES } from '../constants';
 import { getCurrentUser, getUserRole } from '../services/auth';
@@ -57,7 +55,7 @@ const WorkflowPage = () => {
   const [dashboardLoading, setDashboardLoading] = useState(false);
 
   // Date filtering state
-  const [dateFilter, setDateFilter] = useState('current_month');
+  const [dateFilter, setDateFilter] = useState('all_time');
   const [customDateRange, setCustomDateRange] = useState(null);
 
   const currentUser = getCurrentUser();
@@ -75,6 +73,10 @@ const WorkflowPage = () => {
     let startDate;
 
     switch (filter) {
+      case 'all_time':
+        // Show all data without any date filtering
+        setFilteredWorkflows(safeWorkflows);
+        return;
       case 'current_month':
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         break;
@@ -256,7 +258,7 @@ const WorkflowPage = () => {
       dataIndex: 'materialCode',
       key: 'materialCode',
       width: 90,
-      render: text => <Text code>{text}</Text>
+      render: text => <Text strong>{text}</Text>
     },
     {
       title: 'Description',
@@ -380,6 +382,7 @@ const WorkflowPage = () => {
                 size="middle"
                 style={{ width: 160 }}
               >
+                <Option value="all_time">All Time</Option>
                 <Option value="current_month">Current Month</Option>
                 <Option value="past_3_months">Past 3 Months</Option>
                 <Option value="past_6_months">Past 6 Months</Option>
@@ -646,38 +649,6 @@ const WorkflowPage = () => {
             <Row gutter={[16, 16]}>
               <Col span={24}>
                 <QueryWidget workflowId={selectedWorkflowId} userRole={userRole} />
-              </Col>
-            </Row>
-          </TabPane>
-
-          <TabPane
-            tab={
-              <span>
-                <HistoryOutlined />
-                Audit Trail
-              </span>
-            }
-            key="audit"
-          >
-            <Row gutter={[16, 16]}>
-              <Col span={24}>
-                {selectedWorkflowId ? (
-                  <AuditTimeline workflowId={selectedWorkflowId} entityType="complete" />
-                ) : (
-                  <Card>
-                    <div
-                      style={{
-                        textAlign: 'center',
-                        padding: '40px 20px',
-                        color: '#999'
-                      }}
-                    >
-                      <HistoryOutlined style={{ fontSize: '48px', marginBottom: '16px' }} />
-                      <h3>Select a Workflow</h3>
-                      <p>Choose a workflow from the dashboard to view its audit trail</p>
-                    </div>
-                  </Card>
-                )}
               </Col>
             </Row>
           </TabPane>

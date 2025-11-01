@@ -77,6 +77,12 @@ export const queryAPI = {
 
   // Query search and filtering
   /**
+   * Get all queries from all time
+   * @returns {Promise<Array>} Array of all queries
+   */
+  getAllQueries: () => apiClient.get('/queries'),
+
+  /**
    * Get queries for a specific workflow
    * @param {string} workflowId - Workflow ID
    * @returns {Promise<Array>} Array of queries for the workflow
