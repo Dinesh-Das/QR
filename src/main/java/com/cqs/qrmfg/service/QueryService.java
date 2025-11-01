@@ -107,4 +107,8 @@ public interface QueryService {
     // Form Editing Permissions
     boolean canPlantEditForm(Long workflowId);
     Map<String, Object> getQueryStatusSummary(Long workflowId);
+    
+    // Enhanced workflow assignment logic
+    QueryTeam determineNextAssignedTeam(Long workflowId);
+    List<Query> findAllQueriesByWorkflowOrderByCreatedAt(Long workflowId);
 }

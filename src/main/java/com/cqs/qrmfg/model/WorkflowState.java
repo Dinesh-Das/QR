@@ -34,12 +34,16 @@ public enum WorkflowState {
     public boolean canTransitionTo(WorkflowState newState) {
         switch (this) {
             case JVC_PENDING:
-                return newState == PLANT_PENDING;
+                // JVC can transition to PLANT_PENDING or other query states (for multi-query scenarios)
+                return newState == PLANT_PENDING || newState == CQS_PENDING || newState == TECH_PENDING;
             case PLANT_PENDING:
                 return newState == CQS_PENDING || newState == TECH_PENDING || newState == JVC_PENDING || newState == COMPLETED;
             case CQS_PENDING:
+                // CQS can transition back to PLANT_PENDING or to other query states (for multi-query scenarios)
+                return newState == PLANT_PENDING || newState == TECH_PENDING || newState == JVC_PENDING;
             case TECH_PENDING:
-                return newState == PLANT_PENDING;
+                // TECH can transition back to PLANT_PENDING or to other query states (for multi-query scenarios)
+                return newState == PLANT_PENDING || newState == CQS_PENDING || newState == JVC_PENDING;
             case COMPLETED:
                 return false; // Terminal state
             default:

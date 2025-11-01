@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -141,27 +142,42 @@ public class QueryServiceImpl implements QueryService {
         // Transition workflow to appropriate query state
         try {
             WorkflowState queryState = assignedTeam.getCorrespondingWorkflowState();
-            workflowService.transitionToState(workflowId, queryState, raisedBy);
-            logger.info("Workflow {} transitioned to state {} for query assignment to {}", 
-                       workflowId, queryState, assignedTeam);
+            WorkflowState currentState = workflow.getState();
+            
+            // Only transition if not already in the target state and transition is valid
+            if (currentState != queryState && workflow.canTransitionTo(queryState)) {
+                workflowService.transitionToState(workflowId, queryState, raisedBy);
+                logger.info("Workflow {} transitioned from {} to {} for query assignment to {}", 
+                           workflowId, currentState, queryState, assignedTeam);
+            } else if (currentState == queryState) {
+                logger.debug("Workflow {} already in state {}, no transition needed for query assignment to {}", 
+                            workflowId, queryState, assignedTeam);
+            } else {
+                logger.warn("Cannot transition workflow {} from {} to {} for query assignment to {}", 
+                           workflowId, currentState, queryState, assignedTeam);
+            }
         } catch (Exception e) {
             logger.warn("Failed to transition workflow {} to query state for team {}: {}", 
                        workflowId, assignedTeam, e.getMessage());
             // Don't fail the query creation if workflow transition fails
         }
         
-        // Send comprehensive notifications for query creation
-        try {
-            // Notify the assigned team about the new query
-            notificationService.notifyQueryRaised(savedQuery);
-            
-            // Also notify as a query assignment to the team
-            notificationService.notifyQueryAssigned(savedQuery, raisedBy);
-            logger.info("Query created successfully, notifications sent to assigned team");
-        } catch (Exception e) {
-            logger.warn("Failed to send query raised notification for query {}: {}", 
-                       savedQuery.getId(), e.getMessage());
-        }
+        // Send comprehensive notifications for query creation asynchronously
+        // Use a separate thread to avoid transaction conflicts
+        final Query finalQuery = savedQuery;
+        CompletableFuture.runAsync(() -> {
+            try {
+                // Notify the assigned team about the new query
+                notificationService.notifyQueryRaised(finalQuery);
+                
+                // Also notify as a query assignment to the team
+                notificationService.notifyQueryAssigned(finalQuery, raisedBy);
+                logger.info("Query created successfully, notifications sent to assigned team");
+            } catch (Exception e) {
+                logger.warn("Failed to send query raised notification for query {}: {}", 
+                           finalQuery.getId(), e.getMessage());
+            }
+        });
         
         return savedQuery;
     }
@@ -215,13 +231,20 @@ public class QueryServiceImpl implements QueryService {
         logger.info("Resolving query {} for workflow {} by user: {}", 
                    queryId, query.getWorkflow().getMaterialCode(), resolvedBy);
         
+        logger.debug("Query {} status before resolution: {}", queryId, query.getStatus());
+        
         query.resolve(response, resolvedBy);
         
         if (priorityLevel != null) {
             query.setPriorityLevel(priorityLevel);
         }
         
+        logger.debug("Query {} status after resolution: {}", queryId, query.getStatus());
+        
         Query resolvedQuery = queryRepository.save(query);
+        queryRepository.flush(); // Ensure the database is updated immediately
+        
+        logger.info("Query {} saved with status: {}", resolvedQuery.getId(), resolvedQuery.getStatus());
         
         // Send notification for query resolution
         try {
@@ -231,10 +254,62 @@ public class QueryServiceImpl implements QueryService {
                        resolvedQuery.getId(), e.getMessage());
         }
         
-        // Check if workflow can return to PLANT_PENDING state
+        // Enhanced logic: Check remaining queries and determine next assignment
         Workflow workflow = query.getWorkflow();
-        if (!workflow.hasOpenQueries()) {
-            workflowService.returnFromQueryState(workflow.getId(), resolvedBy);
+        
+        // Get all remaining open queries for this workflow
+        List<Query> remainingOpenQueries = queryRepository.findOpenQueriesByWorkflow(workflow.getId());
+        
+        logger.info("Query {} resolved. Workflow {} has {} remaining open queries", 
+                   queryId, workflow.getId(), remainingOpenQueries.size());
+        
+        if (remainingOpenQueries.isEmpty()) {
+            // No more open queries - return to plant
+            logger.info("No more open queries for workflow {}, returning to PLANT_PENDING state", workflow.getId());
+            try {
+                workflowService.transitionToState(workflow.getId(), WorkflowState.PLANT_PENDING, resolvedBy);
+                logger.info("Successfully returned workflow {} to PLANT_PENDING state", workflow.getId());
+            } catch (Exception e) {
+                logger.error("Failed to return workflow {} to PLANT_PENDING state: {}", workflow.getId(), e.getMessage(), e);
+            }
+        } else {
+            // Multiple queries exist - assign to the team that raised the first query chronologically
+            Query firstQuery = remainingOpenQueries.stream()
+                .min((q1, q2) -> q1.getCreatedAt().compareTo(q2.getCreatedAt()))
+                .orElse(remainingOpenQueries.get(0));
+            
+            QueryTeam nextAssignedTeam = firstQuery.getAssignedTeam();
+            WorkflowState nextState = nextAssignedTeam.getCorrespondingWorkflowState();
+            
+            logger.info("Workflow {} has {} remaining queries. First query (ID: {}) was raised to {} at {}. " +
+                       "Transitioning workflow to {} state", 
+                       workflow.getId(), remainingOpenQueries.size(), firstQuery.getId(), 
+                       nextAssignedTeam, firstQuery.getCreatedAt(), nextState);
+            
+            try {
+                // Only transition if not already in the target state
+                if (workflow.getState() != nextState) {
+                    logger.info("Attempting workflow transition: {} -> {} for workflow {}", 
+                               workflow.getState(), nextState, workflow.getId());
+                    workflowService.transitionToState(workflow.getId(), nextState, resolvedBy);
+                    logger.info("Successfully transitioned workflow {} from {} to {} state for team {}", 
+                               workflow.getId(), workflow.getState(), nextState, nextAssignedTeam);
+                } else {
+                    logger.debug("Workflow {} already in correct state {} for team {}", 
+                                workflow.getId(), nextState, nextAssignedTeam);
+                }
+            } catch (Exception e) {
+                logger.error("Failed to transition workflow {} from {} to {} state: {}", 
+                           workflow.getId(), workflow.getState(), nextState, e.getMessage(), e);
+            }
+            
+            // Log details of remaining queries for debugging
+            logger.debug("Remaining open queries for workflow {}:", workflow.getId());
+            for (Query openQuery : remainingOpenQueries) {
+                logger.debug("  - Query ID: {}, Team: {}, Created: {}, Question: {}", 
+                           openQuery.getId(), openQuery.getAssignedTeam(), 
+                           openQuery.getCreatedAt(), openQuery.getQuestion().substring(0, Math.min(50, openQuery.getQuestion().length())));
+            }
         }
         
         return resolvedQuery;
@@ -281,7 +356,20 @@ public class QueryServiceImpl implements QueryService {
         
         // Update workflow state if necessary
         WorkflowState newState = newTeam.getCorrespondingWorkflowState();
-        workflowService.transitionToState(query.getWorkflow().getId(), newState, updatedBy);
+        WorkflowState currentState = query.getWorkflow().getState();
+        
+        // Only transition if not already in the target state and transition is valid
+        if (currentState != newState && query.getWorkflow().canTransitionTo(newState)) {
+            workflowService.transitionToState(query.getWorkflow().getId(), newState, updatedBy);
+            logger.info("Workflow {} transitioned from {} to {} for query reassignment to {}", 
+                       query.getWorkflow().getId(), currentState, newState, newTeam);
+        } else if (currentState == newState) {
+            logger.debug("Workflow {} already in state {}, no transition needed for query reassignment to {}", 
+                        query.getWorkflow().getId(), newState, newTeam);
+        } else {
+            logger.warn("Cannot transition workflow {} from {} to {} for query reassignment to {}", 
+                       query.getWorkflow().getId(), currentState, newState, newTeam);
+        }
         
         return updatedQuery;
     }
@@ -753,5 +841,32 @@ public class QueryServiceImpl implements QueryService {
         summary.put("activeQueriesByTeam", teamCounts);
         
         return summary;
+    }
+    
+    // Enhanced workflow assignment logic methods
+    @Override
+    @Transactional(readOnly = true)
+    public QueryTeam determineNextAssignedTeam(Long workflowId) {
+        List<Query> openQueries = queryRepository.findOpenQueriesByWorkflow(workflowId);
+        
+        if (openQueries.isEmpty()) {
+            return null; // No queries, should return to plant
+        }
+        
+        // Find the first query chronologically (earliest created)
+        Query firstQuery = openQueries.stream()
+            .min((q1, q2) -> q1.getCreatedAt().compareTo(q2.getCreatedAt()))
+            .orElse(openQueries.get(0));
+        
+        logger.debug("Determined next assigned team for workflow {}: {} (based on first query ID: {} created at {})", 
+                    workflowId, firstQuery.getAssignedTeam(), firstQuery.getId(), firstQuery.getCreatedAt());
+        
+        return firstQuery.getAssignedTeam();
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<Query> findAllQueriesByWorkflowOrderByCreatedAt(Long workflowId) {
+        return queryRepository.findAllQueriesByWorkflowOrderByCreatedAt(workflowId);
     }
 }

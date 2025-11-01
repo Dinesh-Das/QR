@@ -157,11 +157,14 @@ public interface QueryRepository extends JpaRepository<Query, Long> {
     @org.springframework.data.jpa.repository.Query("SELECT q FROM Query q JOIN FETCH q.workflow WHERE q.status = 'OPEN' AND q.createdAt < :cutoffTime ORDER BY q.createdAt ASC")
     List<Query> findQueriesNeedingAttention(@Param("cutoffTime") LocalDateTime cutoffTime);
     
-    @org.springframework.data.jpa.repository.Query("SELECT q FROM Query q JOIN FETCH q.workflow WHERE q.workflow.id = :workflowId AND q.status = 'OPEN'")
+    @org.springframework.data.jpa.repository.Query("SELECT q FROM Query q JOIN FETCH q.workflow WHERE q.workflow.id = :workflowId AND q.status = 'OPEN' ORDER BY q.createdAt ASC")
     List<Query> findOpenQueriesByWorkflow(@Param("workflowId") Long workflowId);
     
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(q) > 0 FROM Query q WHERE q.workflow.id = :workflowId AND q.status = 'OPEN'")
     Boolean hasWorkflowOpenQueries(@Param("workflowId") Long workflowId);
+    
+    @org.springframework.data.jpa.repository.Query("SELECT q FROM Query q JOIN FETCH q.workflow WHERE q.workflow.id = :workflowId ORDER BY q.createdAt ASC")
+    List<Query> findAllQueriesByWorkflowOrderByCreatedAt(@Param("workflowId") Long workflowId);
     
     @org.springframework.data.jpa.repository.Query("SELECT q FROM Query q JOIN FETCH q.workflow WHERE q.id = :id")
     java.util.Optional<Query> findByIdWithWorkflow(@Param("id") Long id);

@@ -458,6 +458,8 @@ public class WorkflowServiceImpl implements WorkflowService {
         
         // Only transition if currently in a query state
         WorkflowState currentState = workflow.getState();
+        logger.info("returnFromQueryState called for workflow {} in state {}", workflowId, currentState);
+        
         if (currentState == WorkflowState.CQS_PENDING || 
             currentState == WorkflowState.TECH_PENDING || 
             currentState == WorkflowState.JVC_PENDING) {
@@ -466,7 +468,7 @@ public class WorkflowServiceImpl implements WorkflowService {
                        workflowId, currentState);
             return transitionToState(workflowId, WorkflowState.PLANT_PENDING, updatedBy);
         } else {
-            logger.debug("Workflow {} is already in state {}, no transition needed", 
+            logger.info("Workflow {} is already in state {}, no transition needed", 
                         workflowId, currentState);
             return workflow;
         }
@@ -579,9 +581,10 @@ public class WorkflowServiceImpl implements WorkflowService {
         
         // Validate query state transitions
         if (newState.isQueryState()) {
-            if (workflow.getState() != WorkflowState.PLANT_PENDING) {
+            // Allow transitions to query states from PLANT_PENDING or from other query states (for multi-query scenarios)
+            if (workflow.getState() != WorkflowState.PLANT_PENDING && !workflow.getState().isQueryState()) {
                 throw new InvalidWorkflowStateException(
-                    "Can only move to query states from PLANT_PENDING state");
+                    "Can only move to query states from PLANT_PENDING state or from other query states");
             }
         }
     }

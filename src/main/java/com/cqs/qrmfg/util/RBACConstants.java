@@ -277,6 +277,8 @@ public final class RBACConstants {
             dataType.toLowerCase().contains("config") ||
             dataType.toLowerCase().contains("audit") ||
             dataType.toLowerCase().contains("workflow") ||
+            dataType.toLowerCase().contains("query") ||
+            dataType.toLowerCase().contains("document") ||
             dataType.toLowerCase().contains("analytics")
         );
     }

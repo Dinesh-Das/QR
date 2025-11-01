@@ -111,14 +111,14 @@ public class QueryController {
                 raisedBy
             );
             
+            // Update additional properties if provided
+            Query savedQuery = query;
             if (request.getPriorityLevel() != null) {
-                query.setPriorityLevel(request.getPriorityLevel());
+                savedQuery = queryService.updatePriority(query.getId(), request.getPriorityLevel(), raisedBy);
             }
             if (request.getQueryCategory() != null) {
-                query.setQueryCategory(request.getQueryCategory());
+                savedQuery = queryService.updateCategory(savedQuery.getId(), request.getQueryCategory(), raisedBy);
             }
-            
-            Query savedQuery = queryService.save(query);
             logger.info("Successfully created query with ID: {}", savedQuery.getId());
             
             // Reload the query with workflow to avoid lazy loading issues
@@ -983,4 +983,6 @@ public class QueryController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+
 }
