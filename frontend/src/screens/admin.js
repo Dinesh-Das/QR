@@ -23,12 +23,15 @@ const AdminPanel = () => {
 
   const menuItems = [
     { key: '/qrmfg/admin/users', label: 'Users' },
-    { key: '/qrmfg/admin/roles', label: 'Roles' },
+    // Hiding Roles from Admin Dashboard as requested
+    // { key: '/qrmfg/admin/roles', label: 'Roles' },
     { key: '/qrmfg/admin/auditlogs', label: 'Audit Logs' },
     { key: '/qrmfg/admin/sessions', label: 'Sessions' },
-    { key: '/qrmfg/admin/user-role-management', label: 'User Role Management' },
-    { key: '/qrmfg/admin/notification-defaults', label: 'Notification Defaults' },
-    { key: '/qrmfg/admin/workflow-monitoring', label: 'Legacy Monitoring' }
+    // Hiding User Role Management from Admin Dashboard as requested
+    // { key: '/qrmfg/admin/user-role-management', label: 'User Role Management' },
+    { key: '/qrmfg/admin/notification-defaults', label: 'Notification Defaults' }
+    // Hiding Legacy Monitoring from Admin Dashboard as requested
+    // { key: '/qrmfg/admin/workflow-monitoring', label: 'Legacy Monitoring' }
   ];
 
   // If we're at /qrmfg/admin, redirect to /qrmfg/admin/users
@@ -54,12 +57,15 @@ const AdminPanel = () => {
         <div style={{ marginTop: 24 }}>
           <Routes>
             <Route path="users" element={<Users />} />
-            <Route path="roles" element={<Roles />} />
-            <Route path="auditlogs" element={<AuditLogs />} />
-            <Route path="sessions" element={<Sessions />} />
-            <Route path="user-role-management" element={<UserRoleManagement />} />
+            {/* Hiding Roles route from Admin Dashboard as requested */}
+            {/* <Route path="roles" element={<Roles />} /> */}
+            {/* <Route path="auditlogs" element={<AuditLogs />} /> */}
+            {/* <Route path="sessions" element={<Sessions />} /> */}
+            {/* Hiding User Role Management route from Admin Dashboard as requested */}
+            {/* <Route path="user-role-management" element={<UserRoleManagement />} /> */}
             <Route path="notification-defaults" element={<NotificationDefaults />} />
-            <Route path="workflow-monitoring" element={<WorkflowMonitoring />} />
+            {/* Hiding Legacy Monitoring route from Admin Dashboard as requested */}
+            {/* <Route path="workflow-monitoring" element={<WorkflowMonitoring />} /> */}
           </Routes>
         </div>
       </div>

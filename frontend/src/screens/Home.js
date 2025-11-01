@@ -2,38 +2,29 @@ import {
   DashboardOutlined,
   FileTextOutlined,
   TeamOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
   RocketOutlined,
   SafetyOutlined,
-  AuditOutlined,
-  GlobalOutlined
+  AuditOutlined
 } from '@ant-design/icons';
 import {
   Card,
   Row,
   Col,
-  Typography,
-  Button,
-  Badge,
-  Timeline,
-  Progress,
-  Divider
+  Typography
 } from 'antd';
 import React from 'react';
-import { Link } from 'react-router-dom';
 
 const { Title, Paragraph, Text } = Typography;
 
 const Home = () => (
-  <div style={{ padding: 24, background: '#f5f5f5', minHeight: '100vh' }}>
+  <div style={{ padding: 0, background: 'transparent', minHeight: 'calc(100vh - 100px)' }}>
     {/* Hero Section */}
     <div
       style={{
         background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
         borderRadius: 12,
         padding: '48px 32px',
-        marginBottom: 32,
+        marginBottom: 24,
         color: 'white',
         textAlign: 'center'
       }}
@@ -53,199 +44,257 @@ const Home = () => (
 
     {/* Main Features */}
     <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
-      <Col xs={24} lg={16}>
-        <Card
-          title={
-            <>
-              <GlobalOutlined /> Key Features
-            </>
-          }
-          style={{ height: '100%' }}
+      <Col xs={24} md={12} lg={6}>
+        <Card 
+          hoverable 
+          style={{ 
+            textAlign: 'center', 
+            height: '100%',
+            borderRadius: '12px',
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+            border: '1px solid #e2e8f0',
+            transition: 'all 0.3s ease'
+          }}
+          bodyStyle={{ padding: '32px 24px' }}
         >
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={12}>
-              <Card size="small" hoverable>
-                <DashboardOutlined style={{ fontSize: 24, color: '#1890ff', marginBottom: 8 }} />
-                <Title level={5}>Workflow Management</Title>
-                <Paragraph>
-                  Track and manage quality risk workflows from initiation to completion across JVC,
-                  Plant, CQS, and Tech teams.
-                </Paragraph>
-                <Button type="primary" size="small" as={Link} to="/qrmfg/dashboard">
-                  View Dashboard
-                </Button>
-              </Card>
-            </Col>
-            <Col xs={24} md={12}>
-              <Card size="small" hoverable>
-                <FileTextOutlined style={{ fontSize: 24, color: '#52c41a', marginBottom: 8 }} />
-                <Title level={5}>Document Control</Title>
-                <Paragraph>
-                  Centralized document management with version control, access tracking, and secure
-                  storage.
-                </Paragraph>
-                <Button type="primary" size="small" as={Link} to="/qrmfg/documents">
-                  Manage Documents
-                </Button>
-              </Card>
-            </Col>
-            <Col xs={24} md={12}>
-              <Card size="small" hoverable>
-                <AuditOutlined style={{ fontSize: 24, color: '#722ed1', marginBottom: 8 }} />
-                <Title level={5}>Query Management</Title>
-                <Paragraph>
-                  Streamlined query resolution system with team assignments and SLA tracking.
-                </Paragraph>
-                <Button type="primary" size="small" as={Link} to="/qrmfg/queries">
-                  View Queries
-                </Button>
-              </Card>
-            </Col>
-            <Col xs={24} md={12}>
-              <Card size="small" hoverable>
-                <TeamOutlined style={{ fontSize: 24, color: '#fa8c16', marginBottom: 8 }} />
-                <Title level={5}>Role-Based Access</Title>
-                <Paragraph>
-                  Comprehensive RBAC system ensuring secure access control and audit compliance.
-                </Paragraph>
-                <Button type="primary" size="small" as={Link} to="/qrmfg/admin">
-                  Admin Panel
-                </Button>
-              </Card>
-            </Col>
-          </Row>
+          <div style={{
+            background: 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)',
+            borderRadius: '50%',
+            width: '80px',
+            height: '80px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px auto',
+            boxShadow: '0 8px 24px rgba(24, 144, 255, 0.3)'
+          }}>
+            <DashboardOutlined style={{ fontSize: 36, color: 'white' }} />
+          </div>
+          <Title level={4} style={{ color: '#1f2937', marginBottom: 12 }}>Workflow Management</Title>
+          <Paragraph style={{ color: '#6b7280', fontSize: '14px', lineHeight: '1.6' }}>
+            Track and manage quality risk workflows from initiation to completion across JVC,
+            Plant, CQS, and Tech teams.
+          </Paragraph>
         </Card>
       </Col>
-
-      <Col xs={24} lg={8}>
-        <Card
-          title={
-            <>
-              <ClockCircleOutlined /> Recent Activity
-            </>
-          }
-          style={{ height: '100%' }}
+      <Col xs={24} md={12} lg={6}>
+        <Card 
+          hoverable 
+          style={{ 
+            textAlign: 'center', 
+            height: '100%',
+            borderRadius: '12px',
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+            border: '1px solid #e2e8f0',
+            transition: 'all 0.3s ease'
+          }}
+          bodyStyle={{ padding: '32px 24px' }}
         >
-          <Timeline
-            items={[
-              {
-                color: 'green',
-                children: (
-                  <div>
-                    <Text strong>System Initialized</Text>
-                    <br />
-                    <Text type="secondary">QRMFG application started successfully</Text>
-                  </div>
-                )
-              },
-              {
-                color: 'blue',
-                children: (
-                  <div>
-                    <Text strong>Database Connected</Text>
-                    <br />
-                    <Text type="secondary">Oracle database connection established</Text>
-                  </div>
-                )
-              },
-              {
-                color: 'gray',
-                children: (
-                  <div>
-                    <Text strong>Ready for Operations</Text>
-                    <br />
-                    <Text type="secondary">All systems operational</Text>
-                  </div>
-                )
-              }
-            ]}
-          />
+          <div style={{
+            background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
+            borderRadius: '50%',
+            width: '80px',
+            height: '80px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px auto',
+            boxShadow: '0 8px 24px rgba(82, 196, 26, 0.3)'
+          }}>
+            <FileTextOutlined style={{ fontSize: 36, color: 'white' }} />
+          </div>
+          <Title level={4} style={{ color: '#1f2937', marginBottom: 12 }}>Document Control</Title>
+          <Paragraph style={{ color: '#6b7280', fontSize: '14px', lineHeight: '1.6' }}>
+            Centralized document management with version control, access tracking, and secure
+            storage.
+          </Paragraph>
+        </Card>
+      </Col>
+      <Col xs={24} md={12} lg={6}>
+        <Card 
+          hoverable 
+          style={{ 
+            textAlign: 'center', 
+            height: '100%',
+            borderRadius: '12px',
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+            border: '1px solid #e2e8f0',
+            transition: 'all 0.3s ease'
+          }}
+          bodyStyle={{ padding: '32px 24px' }}
+        >
+          <div style={{
+            background: 'linear-gradient(135deg, #722ed1 0%, #9254de 100%)',
+            borderRadius: '50%',
+            width: '80px',
+            height: '80px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px auto',
+            boxShadow: '0 8px 24px rgba(114, 46, 209, 0.3)'
+          }}>
+            <AuditOutlined style={{ fontSize: 36, color: 'white' }} />
+          </div>
+          <Title level={4} style={{ color: '#1f2937', marginBottom: 12 }}>Query Management</Title>
+          <Paragraph style={{ color: '#6b7280', fontSize: '14px', lineHeight: '1.6' }}>
+            Streamlined query resolution system with team assignments and SLA tracking.
+          </Paragraph>
+        </Card>
+      </Col>
+      <Col xs={24} md={12} lg={6}>
+        <Card 
+          hoverable 
+          style={{ 
+            textAlign: 'center', 
+            height: '100%',
+            borderRadius: '12px',
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+            border: '1px solid #e2e8f0',
+            transition: 'all 0.3s ease'
+          }}
+          bodyStyle={{ padding: '32px 24px' }}
+        >
+          <div style={{
+            background: 'linear-gradient(135deg, #fa8c16 0%, #ffa940 100%)',
+            borderRadius: '50%',
+            width: '80px',
+            height: '80px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px auto',
+            boxShadow: '0 8px 24px rgba(250, 140, 22, 0.3)'
+          }}>
+            <TeamOutlined style={{ fontSize: 36, color: 'white' }} />
+          </div>
+          <Title level={4} style={{ color: '#1f2937', marginBottom: 12 }}>Role-Based Access</Title>
+          <Paragraph style={{ color: '#6b7280', fontSize: '14px', lineHeight: '1.6' }}>
+            Comprehensive RBAC system ensuring secure access control and audit compliance.
+          </Paragraph>
         </Card>
       </Col>
     </Row>
 
-
-    {/* Project Information */}
-    <Row gutter={[24, 24]}>
-      <Col xs={24} lg={12}>
-        <Card
-          title={
-            <>
-              <SafetyOutlined /> About QRMFG
-            </>
-          }
-        >
-          <Paragraph>
-            <Text strong>QRMFG (Quality Risk Management for Manufacturing)</Text> is an
+    {/* About Section */}
+    <Card
+      style={{ 
+        marginBottom: 24,
+        borderRadius: '12px',
+        background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+      }}
+      bodyStyle={{ padding: '32px' }}
+    >
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        marginBottom: 24,
+        paddingBottom: 16,
+        borderBottom: '1px solid #e2e8f0'
+      }}>
+        <div style={{
+          background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+          borderRadius: '50%',
+          width: '48px',
+          height: '48px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginRight: 16,
+          boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)'
+        }}>
+          <SafetyOutlined style={{ fontSize: 24, color: 'white' }} />
+        </div>
+        <Title level={3} style={{ margin: 0, color: '#1f2937' }}>About QRMFG</Title>
+      </div>
+      
+      <Row gutter={[32, 24]}>
+        <Col xs={24} lg={12}>
+          <Paragraph style={{ fontSize: '16px', lineHeight: '1.7', color: '#374151' }}>
+            <Text strong style={{ color: '#1f2937' }}>QRMFG (Quality Risk Management for Manufacturing)</Text> is an
             enterprise-grade workflow management system designed specifically for manufacturing
             quality assurance processes.
           </Paragraph>
-
-          <Divider />
-
-          <Title level={5}>Key Capabilities:</Title>
-          <ul style={{ paddingLeft: 20 }}>
-            <li>
-              <Text strong>Multi-Stage Workflows:</Text> JVC → Plant → CQS → Tech approval chains
+        </Col>
+        <Col xs={24} lg={12}>
+          <Title level={5} style={{ color: '#1f2937', marginBottom: 16 }}>Key Capabilities:</Title>
+          <ul style={{ paddingLeft: 0, lineHeight: '1.8', listStyle: 'none' }}>
+            <li style={{ marginBottom: 12, display: 'flex', alignItems: 'flex-start' }}>
+              <span style={{ 
+                background: '#1890ff', 
+                borderRadius: '50%', 
+                width: '6px', 
+                height: '6px', 
+                marginTop: '8px', 
+                marginRight: '12px',
+                flexShrink: 0
+              }}></span>
+              <span style={{ color: '#374151' }}>
+                <Text strong style={{ color: '#1f2937' }}>Multi-Stage Workflows:</Text> JVC → Plant → CQS → Tech approval chains
+              </span>
             </li>
-            <li>
-              <Text strong>Document Management:</Text> Secure storage with version control
+            <li style={{ marginBottom: 12, display: 'flex', alignItems: 'flex-start' }}>
+              <span style={{ 
+                background: '#52c41a', 
+                borderRadius: '50%', 
+                width: '6px', 
+                height: '6px', 
+                marginTop: '8px', 
+                marginRight: '12px',
+                flexShrink: 0
+              }}></span>
+              <span style={{ color: '#374151' }}>
+                <Text strong style={{ color: '#1f2937' }}>Document Management:</Text> Secure storage with version control
+              </span>
             </li>
-            <li>
-              <Text strong>Query Resolution:</Text> Structured Q&A system with SLA tracking
+            <li style={{ marginBottom: 12, display: 'flex', alignItems: 'flex-start' }}>
+              <span style={{ 
+                background: '#722ed1', 
+                borderRadius: '50%', 
+                width: '6px', 
+                height: '6px', 
+                marginTop: '8px', 
+                marginRight: '12px',
+                flexShrink: 0
+              }}></span>
+              <span style={{ color: '#374151' }}>
+                <Text strong style={{ color: '#1f2937' }}>Query Resolution:</Text> Structured Q&A system with SLA tracking
+              </span>
             </li>
-            <li>
-              <Text strong>Audit Compliance:</Text> Complete audit trail and reporting
+            <li style={{ marginBottom: 12, display: 'flex', alignItems: 'flex-start' }}>
+              <span style={{ 
+                background: '#fa8c16', 
+                borderRadius: '50%', 
+                width: '6px', 
+                height: '6px', 
+                marginTop: '8px', 
+                marginRight: '12px',
+                flexShrink: 0
+              }}></span>
+              <span style={{ color: '#374151' }}>
+                <Text strong style={{ color: '#1f2937' }}>Audit Compliance:</Text> Complete audit trail and reporting
+              </span>
             </li>
-            <li>
-              <Text strong>Role-Based Security:</Text> Granular access control and permissions
+            <li style={{ marginBottom: 0, display: 'flex', alignItems: 'flex-start' }}>
+              <span style={{ 
+                background: '#f59e0b', 
+                borderRadius: '50%', 
+                width: '6px', 
+                height: '6px', 
+                marginTop: '8px', 
+                marginRight: '12px',
+                flexShrink: 0
+              }}></span>
+              <span style={{ color: '#374151' }}>
+                <Text strong style={{ color: '#1f2937' }}>Role-Based Security:</Text> Granular access control and permissions
+              </span>
             </li>
           </ul>
-        </Card>
-      </Col>
-
-      <Col xs={24} lg={12}>
-        <Card
-          title={
-            <>
-              <CheckCircleOutlined /> System Status
-            </>
-          }
-        >
-          <div style={{ marginBottom: 16 }}>
-            <Text>Database Connection</Text>
-            <Progress percent={100} status="success" showInfo={false} />
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <Text>Application Health</Text>
-            <Progress percent={100} status="success" showInfo={false} />
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <Text>Security Status</Text>
-            <Progress percent={100} status="success" showInfo={false} />
-          </div>
-
-          <Divider />
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Badge status="success" text="Services Online" />
-            </Col>
-            <Col span={12}>
-              <Badge status="success" text="Database Ready" />
-            </Col>
-            <Col span={12}>
-              <Badge status="success" text="Security Active" />
-            </Col>
-            <Col span={12}>
-              <Badge status="success" text="Monitoring On" />
-            </Col>
-          </Row>
-        </Card>
-      </Col>
-    </Row>
+        </Col>
+      </Row>
+    </Card>
 
   </div>
 );

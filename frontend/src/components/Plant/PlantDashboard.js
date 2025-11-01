@@ -84,9 +84,9 @@ const PlantDashboard = React.memo(({
   }
 
   return (
-    <div style={{ marginBottom: 24 }}>
+    <div style={{ marginBottom: 16 }}>
       {/* Main Statistics Row */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+      <Row gutter={[12, 12]} style={{ marginBottom: 12 }}>
         <Col xs={12} sm={6} md={6} lg={6}>
           <Card loading={loading}>
             <Statistic
@@ -131,7 +131,7 @@ const PlantDashboard = React.memo(({
       </Row>
 
       {/* Progress Breakdown Row */}
-      <Row gutter={[16, 16]}>
+      <Row gutter={[12, 12]}>
         <Col xs={24} sm={12} md={8} lg={8}>
           <Card 
             title="Completion Rate" 
@@ -195,7 +195,7 @@ const PlantDashboard = React.memo(({
           description="Overview of all assigned materials and their completion status for the selected plant."
           type="info"
           showIcon
-          style={{ marginTop: 16 }}
+          style={{ marginTop: 12 }}
         />
       )}
     </div>

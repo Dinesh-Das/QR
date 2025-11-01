@@ -164,8 +164,9 @@ class RBACService {
     console.log('User roles:', { isAdmin: isAdmin(), isJvcUser: isJvcUser(), isCqsUser: isCqsUser(), isTechUser: isTechUser(), isPlantUser: isPlantUser() });
     
     const baseItems = [
-      { key: '/qrmfg', icon: 'HomeOutlined', label: 'Home', path: '/qrmfg' },
-      { key: '/qrmfg/dashboard', icon: 'DashboardOutlined', label: 'Dashboard', path: '/qrmfg/dashboard' }
+      { key: '/qrmfg', icon: 'HomeOutlined', label: 'Home', path: '/qrmfg' }
+      // Hiding the dashboard from UI as requested
+      // { key: '/qrmfg/dashboard', icon: 'DashboardOutlined', label: 'Dashboard', path: '/qrmfg/dashboard' }
     ];
 
     const roleBasedItems = [];
@@ -214,9 +215,10 @@ class RBACService {
       roleBasedItems.push({ key: '/qrmfg/workflows', icon: 'AppstoreOutlined', label: 'Workflows', path: '/qrmfg/workflows' });
     }
 
-    if (!isViewer() || isAdmin()) {
-      roleBasedItems.push({ key: '/qrmfg/reports', icon: 'FileSearchOutlined', label: 'Reports', path: '/qrmfg/reports' });
-    }
+    // Hiding the reports from UI as requested
+    // if (!isViewer() || isAdmin()) {
+    //   roleBasedItems.push({ key: '/qrmfg/reports', icon: 'FileSearchOutlined', label: 'Reports', path: '/qrmfg/reports' });
+    // }
 
     // Settings accessible to all
     const settingsItems = [

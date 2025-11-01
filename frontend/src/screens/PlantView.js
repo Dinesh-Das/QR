@@ -285,19 +285,26 @@ const PlantView = () => {
   return (
     <PlantOnly>
       <PlantErrorBoundary plantCode={currentPlant}>
-        <div style={{ padding: 24 }}>
-          {/* Header */}
+        <div style={{ padding: 0 }}>
+          {/* Page Header */}
           <div
             style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: 24
+              marginBottom: 20,
+              padding: '0 0 16px 0',
+              borderBottom: '1px solid #e8e8e8'
             }}
           >
-            <Title level={2} style={{ margin: 0 }}>
-              Plant Dashboard
-            </Title>
+            <div>
+              <Title level={2} style={{ margin: 0, color: '#1f2937' }}>
+                Plant Dashboard
+              </Title>
+              <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>
+                Manufacturing Unit A - Materials Overview
+              </div>
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: '14px', fontWeight: '500' }}>Plant:</span>

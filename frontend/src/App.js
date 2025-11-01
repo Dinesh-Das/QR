@@ -1,5 +1,5 @@
 import { Layout, notification } from 'antd';
-import React, { Suspense } from 'react';
+import React, { Suspense, useState, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import 'antd/dist/reset.css';
@@ -43,6 +43,14 @@ function App() {
   // State to track authentication status
   const [authState, setAuthState] = React.useState(isAuthenticated());
   const [currentPath, setCurrentPath] = React.useState(window.location.pathname);
+
+  // State to track sidebar collapsed status
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Callback to handle sidebar collapse state changes
+  const handleSidebarCollapse = useCallback((collapsed) => {
+    setSidebarCollapsed(collapsed);
+  }, []);
 
   // Example notification usage
   const openNotification = () => {
@@ -114,33 +122,41 @@ function App() {
     <AppErrorBoundary>
       <Router>
         <Layout>
-          {showSidebar && <Navigation />}
+          {showSidebar && <Navigation onCollapse={handleSidebarCollapse} />}
           <Layout
             style={{
               minHeight: '100vh',
-              marginLeft: showSidebar ? 250 : 0,
-              transition: 'margin-left 0.2s'
+              marginLeft: showSidebar ? (sidebarCollapsed ? 70 : 280) : 0,
+              transition: 'margin-left 0.3s ease',
+              background: '#f5f5f5'
             }}
           >
             <Header
               style={{
-                padding: '0 24px',
-                background: '#fff',
-                position: 'sticky',
-                top: 0,
-                zIndex: 1,
-                width: '100%',
+                background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
+                borderBottom: '1px solid #e8e8e8',
+                padding: '0 20px',
+                height: '48px',
                 display: 'flex',
-                alignItems: 'center'
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)'
               }}
-            />
+            >
+              <div style={{
+                fontSize: '14px',
+                color: '#666',
+                fontWeight: '500',
+                letterSpacing: '0.3px'
+              }}>
+                QRMFG12 Portal
+              </div>
+            </Header>
             <Content
               style={{
-                margin: '24px 16px',
-                padding: 24,
-                minHeight: 280,
-                background: '#fff',
-                borderRadius: '4px'
+                padding: '20px',
+                minHeight: 'calc(100vh - 96px)',
+                background: '#f5f5f5'
               }}
             >
               <Suspense fallback={<PageSkeleton />}>
@@ -193,7 +209,7 @@ function App() {
                       </RouteErrorBoundary>
                     }
                   />
-                    <Route
+                  <Route
                     path="/qrmfg/test"
                     element={
                       <div style={{ padding: 20 }}>
@@ -212,7 +228,7 @@ function App() {
                       </RouteErrorBoundary>
                     }
                   />
-                    <Route
+                  <Route
                     path="/qrmfg/workflow-monitoring"
                     element={
                       <RouteErrorBoundary routeName="Workflow Monitoring">
@@ -343,7 +359,7 @@ function App() {
                       </RouteErrorBoundary>
                     }
                   />
-                    <Route
+                  <Route
                     path="/qrmfg/"
                     element={
                       <RouteErrorBoundary routeName="Home">
@@ -369,11 +385,14 @@ function App() {
             <Footer
               style={{
                 textAlign: 'center',
-                padding: '13px'
+                padding: '8px 16px',
+                background: '#f5f5f5',
+                borderTop: '1px solid #e8e8e8',
+                fontSize: '12px',
+                color: '#666'
               }}
             >
-              QRMFG System © {new Date().getFullYear()} Asian Paints Limited | Developed by IT
-              Manufacturing Automation Team
+              QRMFG System © {new Date().getFullYear()} Asian Paints Limited | Developed by IT Manufacturing Automation Team
             </Footer>
           </Layout>
         </Layout>
